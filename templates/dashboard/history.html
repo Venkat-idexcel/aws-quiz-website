@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz History - AWS Quiz Platform{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-title">Quiz History</h1>
+    <p class="welcome-message">Track your progress and see how you're improving</p>
+</div>
+
+<div class="mb-3">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+</div>
+
+{% if quiz_history %}
+<div class="card" style="padding: 0; background: var(--primary-blue);">
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Questions</th>
+                <th>Correct</th>
+                <th>Score</th>
+                <th>Time</th>
+                <th>Performance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for quiz in quiz_history %}
+            <tr>
+                <td>
+                    <div>{{ quiz.completed_at.strftime('%Y-%m-%d') }}</div>
+                    <small style="color: var(--gray-medium);">{{ quiz.completed_at.strftime('%I:%M %p') }}</small>
+                </td>
+                <td>{{ quiz.total_questions }}</td>
+                <td>{{ quiz.correct_answers }}</td>
+                <td>
+                    <span style="font-weight: bold; color: 
+                        {% if quiz.score_percentage >= 70 %}var(--success)
+                        {% elif quiz.score_percentage >= 50 %}var(--warning)
+                        {% else %}var(--danger){% endif %}">
+                        {{ "%.1f"|format(quiz.score_percentage) }}%
+                    </span>
+                </td>
+                <td>{{ quiz.time_taken_minutes or 0 }} min</td>
+                <td>
+                    {% if quiz.score_percentage >= 70 %}
+                        <span style="color: var(--success);">🎉 Excellent</span>
+                    {% elif quiz.score_percentage >= 50 %}
+                        <span style="color: var(--warning);">🚀 Good</span>
+                    {% else %}
+                        <span style="color: var(--danger);">📚 Needs Work</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="dashboard-grid mt-4">
+    {% set total_quizzes = quiz_history|length %}
+    {% set total_questions = quiz_history|sum(attribute='total_questions') %}
+    {% set total_correct = quiz_history|sum(attribute='correct_answers') %}
+    {% set avg_score = quiz_history|map(attribute='score_percentage')|list|sum / total_quizzes if total_quizzes > 0 else 0 %}
+    {% set best_score = quiz_history|map(attribute='score_percentage')|max if total_quizzes > 0 else 0 %}
+    
+    <div class="stat-card">
+        <span class="stat-number">{{ total_quizzes }}</span>
+        <span class="stat-label">Total Quizzes</span>
+    </div>
+    
+    <div class="stat-card">
+        <span class="stat-number">{{ total_questions }}</span>
+        <span class="stat-label">Questions Answered</span>
+    </div>
+    
+    <div class="stat-card">
+        <span class="stat-number">{{ "%.1f"|format(avg_score) }}%</span>
+        <span class="stat-label">Average Score</span>
+    </div>
+    
+    <div class="stat-card">
+        <span class="stat-number">{{ "%.1f"|format(best_score) }}%</span>
+        <span class="stat-label">Best Score</span>
+    </div>
+</div>
+
+<div class="action-buttons mt-4">
+    <a href="{{ url_for('quiz') }}" class="btn btn-primary">Take Another Quiz</a>
+</div>
+
+{% else %}
+<div class="card text-center">
+    <h3 style="color: var(--accent-teal); margin-bottom: 1rem;">No Quiz History Yet</h3>
+    <p style="color: var(--gray-light); margin-bottom: 2rem;">
+        You haven't completed any quizzes yet. Start practicing with AWS Cloud Practitioner questions!
+    </p>
+    <a href="{{ url_for('quiz') }}" class="btn btn-primary">Take Your First Quiz</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to table rows
+    const tableRows = document.querySelectorAll('.history-table tbody tr');
+    tableRows.forEach(function(row) {
+        row.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(5px)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateX(0)';
+        });
+    });
+
+    // Auto-hide flash messages
+    const flashMessages = document.querySelectorAll('.flash-message');
+    flashMessages.forEach(function(message) {
+        setTimeout(function() {
+            message.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(function() {
+                message.remove();
+            }, 300);
+        }, 5000);
+    });
+});
+</script>
+{% endblock %}

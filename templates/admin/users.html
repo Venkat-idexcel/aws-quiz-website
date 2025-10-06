@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-users">
+    <div class="admin-header">
+        <h1>👥 User Management</h1>
+        <p class="admin-subtitle">Manage and monitor all platform users</p>
+    </div>
+
+    <div class="users-actions">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+        <div class="search-box">
+            <input type="text" id="userSearch" placeholder="Search users..." onkeyup="filterUsers()">
+        </div>
+    </div>
+
+    <div class="users-stats">
+        <div class="stat-item">
+            <strong>{{ users|length }}</strong>
+            <span>Total Users</span>
+        </div>
+        <div class="stat-item">
+            <strong>{{ users|selectattr('is_active')|list|length }}</strong>
+            <span>Active</span>
+        </div>
+        <div class="stat-item">
+            <strong>{{ users|selectattr('total_quizzes')|list|length }}</strong>
+            <span>Took Quizzes</span>
+        </div>
+    </div>
+
+    <div class="users-table-container">
+        <table class="users-table" id="usersTable">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Registration</th>
+                    <th>Last Login</th>
+                    <th>Quizzes</th>
+                    <th>Avg Score</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr class="user-row" data-user-name="{{ (user.first_name + ' ' + user.last_name + ' ' + user.email)|lower }}">
+                    <td class="user-info">
+                        <div class="user-avatar">
+                            {{ user.first_name[0] }}{{ user.last_name[0] }}
+                        </div>
+                        <div class="user-details">
+                            <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                            <small>{{ user.username }}</small>
+                        </div>
+                    </td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</td>
+                    <td>
+                        {% if user.last_login %}
+                            {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            <span class="never-logged">Never</span>
+                        {% endif %}
+                    </td>
+                    <td class="quiz-count">{{ user.total_quizzes or 0 }}</td>
+                    <td class="score">
+                        {% if user.average_score %}
+                            <span class="score-badge score-{{ 'excellent' if user.average_score >= 90 else 'good' if user.average_score >= 70 else 'average' }}">
+                                {{ user.average_score }}%
+                            </span>
+                        {% else %}
+                            <span class="no-data">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge {{ 'active' if user.is_active else 'inactive' }}">
+                            {{ 'Active' if user.is_active else 'Inactive' }}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="btn btn-small btn-primary">
+                            View Details
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if not users %}
+        <div class="no-users">
+            <p>No users found.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.admin-users {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.admin-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.admin-header h1 {
+    color: #1e293b;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.admin-subtitle {
+    color: #64748b;
+    font-size: 1.2rem;
+    margin-bottom: 0;
+}
+
+.users-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.search-box input {
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 25px;
+    width: 300px;
+    font-size: 1rem;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.users-stats {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-item strong {
+    display: block;
+    font-size: 2rem;
+    color: #3b82f6;
+    font-weight: 800;
+}
+
+.stat-item span {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.users-table-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.users-table th {
+    background: #3b82f6;
+    color: white;
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 1rem;
+    border-bottom: 2px solid #1d4ed8;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.users-table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.user-details strong {
+    display: block;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.user-details small {
+    color: #64748b;
+}
+
+.never-logged {
+    color: #f59e0b;
+    font-style: italic;
+}
+
+.quiz-count {
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.score-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.score-excellent {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.score-good {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.score-average {
+    background: #fce4ec;
+    color: #c2185b;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.active {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.status-badge.inactive {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.no-data {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.no-users {
+    text-align: center;
+    padding: 50px;
+    color: #64748b;
+}
+
+.user-row.hidden {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .users-actions {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .search-box input {
+        width: 100%;
+    }
+    
+    .users-stats {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .users-table-container {
+        overflow-x: auto;
+    }
+    
+    .users-table {
+        min-width: 800px;
+    }
+}
+</style>
+
+<script>
+function filterUsers() {
+    const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('.user-row');
+    
+    rows.forEach(row => {
+        const userName = row.getAttribute('data-user-name');
+        if (userName.includes(searchTerm)) {
+            row.classList.remove('hidden');
+        } else {
+            row.classList.add('hidden');
+        }
+    });
+}
+</script>
+{% endblock %}

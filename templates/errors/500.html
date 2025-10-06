@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - AWS Quiz Platform{% endblock %}
+
+{% block content %}
+<div class="card text-center">
+    <div style="font-size: 6rem; margin-bottom: 1rem;">⚠️</div>
+    <h1 class="card-title">Server Error</h1>
+    <p class="card-subtitle mb-4">
+        Something went wrong on our end. Please try again later.
+    </p>
+    
+    <div class="action-buttons">
+        <a href="{{ url_for('dashboard') if session.user_id else url_for('login') }}" class="btn btn-primary">
+            Go Home
+        </a>
+        <button onclick="location.reload()" class="btn btn-secondary">
+            Refresh Page
+        </button>
+    </div>
+</div>
+{% endblock %}

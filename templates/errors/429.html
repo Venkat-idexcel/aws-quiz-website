@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Rate Limit Exceeded - AssessIQ Platform{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 2rem auto; text-align: center;">
+    <div class="card-header">
+        <h1 style="color: var(--warning); font-size: 4rem; margin-bottom: 1rem;">⚠️</h1>
+        <h2 style="color: var(--warning); margin-bottom: 0.5rem;">Rate Limit Exceeded</h2>
+        <p style="color: var(--gray-medium);">Too many requests. Please slow down!</p>
+    </div>
+
+    <div style="padding: 2rem;">
+        <p style="line-height: 1.6; color: var(--gray-dark); margin-bottom: 2rem;">
+            You've made too many requests in a short period. This helps us keep the platform 
+            running smoothly for everyone. Please wait a moment and try again.
+        </p>
+
+        <div style="background: var(--background-light); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+            <h3 style="color: var(--accent-teal); margin-bottom: 1rem;">⏰ What can you do?</h3>
+            <ul style="text-align: left; color: var(--gray-dark);">
+                <li>Wait a few minutes and try again</li>
+                <li>Reduce the frequency of your requests</li>
+                <li>Contact support if you think this is an error</li>
+            </ul>
+        </div>
+
+        <div class="action-buttons">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                🏠 Back to Dashboard
+            </a>
+            <button onclick="history.back()" class="btn btn-secondary">
+                ← Go Back
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 8px 25px rgba(241, 196, 15, 0.2);
+    border: 2px solid var(--warning);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+// Auto-refresh after 60 seconds
+setTimeout(function() {
+    const refreshButton = document.createElement('button');
+    refreshButton.textContent = '🔄 Try Again';
+    refreshButton.className = 'btn btn-success';
+    refreshButton.onclick = function() {
+        window.location.reload();
+    };
+    document.querySelector('.action-buttons').appendChild(refreshButton);
+}, 60000);
+</script>
+{% endblock %}

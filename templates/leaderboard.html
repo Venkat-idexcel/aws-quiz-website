@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - Top Performers{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">🏆 Leaderboard - Top Performers</h1>
+            
+            <!-- User's Position Card -->
+            {% if user_position %}
+            <div class="alert alert-info mb-4">
+                <div class="d-flex align-items-center">
+                    <span class="me-3" style="font-size: 2rem;">
+                        {% if user_position == 1 %}🥇
+                        {% elif user_position == 2 %}🥈
+                        {% elif user_position == 3 %}🥉
+                        {% else %}🏅
+                        {% endif %}
+                    </span>
+                    <div>
+                        <strong>Your Current Position: #{{ user_position }}</strong>
+                        <br><small>Keep learning to climb higher!</small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Leaderboard -->
+            {% if leaderboard %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🌟 Top Performers</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th width="80">Rank</th>
+                                    <th>Name</th>
+                                    <th width="120">Quizzes</th>
+                                    <th width="120">Avg Score</th>
+                                    <th width="120">Best Score</th>
+                                    <th width="100">Badges</th>
+                                    <th width="120">Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in leaderboard %}
+                                <tr class="{% if session.get('user_id') == user.id %}table-warning{% endif %}">
+                                    <td class="text-center">
+                                        {% if loop.index == 1 %}
+                                            <span class="rank-medal">🥇</span>
+                                        {% elif loop.index == 2 %}
+                                            <span class="rank-medal">🥈</span>
+                                        {% elif loop.index == 3 %}
+                                            <span class="rank-medal">🥉</span>
+                                        {% else %}
+                                            <span class="rank-number">#{{ loop.index }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-2">
+                                                {{ user.first_name[0] }}{{ user.last_name[0] }}
+                                            </div>
+                                            <div>
+                                                <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                                                {% if session.get('user_id') == user.id %}
+                                                    <small class="text-primary">(You)</small>
+                                                {% endif %}
+                                                <br>
+                                                <small class="text-muted">@{{ user.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ user.total_quizzes }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="score-display">
+                                            <strong>{{ "%.1f"|format(user.avg_score) }}%</strong>
+                                            <div class="progress mt-1" style="height: 4px;">
+                                                <div class="progress-bar {% if user.avg_score >= 80 %}bg-success{% elif user.avg_score >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ user.avg_score }}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge {% if user.best_score >= 90 %}bg-success{% elif user.best_score >= 70 %}bg-info{% else %}bg-secondary{% endif %}">
+                                            {{ "%.0f"|format(user.best_score) }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if user.badges_count > 0 %}
+                                            <span class="badge bg-warning text-dark">
+                                                🏅 {{ user.badges_count }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-primary">{{ "%.0f"|format(user.leaderboard_score) }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scoring Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">📊 How Scoring Works</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="scoring-icon mb-2">📝</div>
+                                <h6>Quiz Count</h6>
+                                <small class="text-muted">+2 points per completed quiz</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="scoring-icon mb-2">📊</div>
+                                <h6>Average Score</h6>
+                                <small class="text-muted">40% of your average quiz score</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="scoring-icon mb-2">🏅</div>
+                                <h6>Badges</h6>
+                                <small class="text-muted">+5 points per badge earned</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="scoring-icon mb-2">⭐</div>
+                                <h6>Best Score</h6>
+                                <small class="text-muted">10% of your highest quiz score</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4" style="font-size: 4rem; opacity: 0.5;">🏆</div>
+                    <h4 class="text-muted">No Data Yet</h4>
+                    <p class="text-muted">The leaderboard will populate once users start taking quizzes!</p>
+                    <a href="{{ url_for('quiz') }}" class="btn btn-primary">
+                        <i class="fas fa-play me-2"></i>Take a Quiz
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.rank-medal {
+    font-size: 1.5rem;
+}
+
+.rank-number {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #6c757d;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.score-display {
+    min-width: 80px;
+}
+
+.scoring-icon {
+    font-size: 2rem;
+}
+
+.table-warning {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+@media (max-width: 768px) {
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+    
+    .rank-medal {
+        font-size: 1.2rem;
+    }
+    
+    .scoring-icon {
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,718 @@
+{% extends "base.html" %}
+
+{% block title %}Select Quiz Type - AssessIQ Platform{% endblock %}
+
+{% block content %}
+<div class="quiz-page-wrapper">
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1 class="quiz-title">📋 Choose Your Quiz</h1>
+                <p class="quiz-subtitle">Select a quiz type to test your knowledge</p>
+            </div>
+        </div>
+        
+        <a href="{{ url_for('dashboard') }}" class="back-btn">
+            <span>Back to Dashboard</span>
+        </a>
+    </div>
+
+    <div class="quiz-selection-grid">
+        <!-- AWS Cloud Practitioner Quiz -->
+        <div class="quiz-card premium available">
+            <div class="quiz-badge">Most Popular</div>
+            <div class="quiz-icon">
+                <div class="icon-container">☁️</div>
+            </div>
+            
+            <div class="quiz-info">
+                <h3>AWS Cloud Practitioner</h3>
+                <div class="quiz-details">
+                    <div class="detail-item">
+                        <span class="detail-icon">📚</span>
+                        <span class="detail-text">Comprehensive Assessment</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">⭐</span>
+                        <span class="detail-text">All Difficulty Levels</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">🏆</span>
+                        <span class="detail-text">Certificate Available</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quiz-actions">
+                <button onclick="showQuizConfig('aws-cloud-practitioner')" class="quiz-action-btn primary">
+                    <span class="btn-text">Configure & Start</span>
+                    <span class="btn-icon">⚙️</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- AWS Data Engineer Quiz -->
+        <div class="quiz-card premium coming-soon">
+            <div class="quiz-badge coming-soon-badge">Coming Soon</div>
+            <div class="quiz-icon">
+                <div class="icon-container">📊</div>
+            </div>
+            
+            <div class="quiz-info">
+                <h3>AWS Data Engineer</h3>
+                <div class="quiz-details">
+                    <div class="detail-item">
+                        <span class="detail-icon">📊</span>
+                        <span class="detail-text">Data Engineering Focus</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">⚡</span>
+                        <span class="detail-text">Advanced Level</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">🏆</span>
+                        <span class="detail-text">Professional Certification</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quiz-actions">
+                <button onclick="showComingSoonNotification('aws-data-engineer')" class="quiz-action-btn disabled">
+                    <span class="btn-text">Coming Soon</span>
+                    <span class="btn-icon">⏳</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tableau Desktop Quiz -->
+        <div class="quiz-card premium coming-soon">
+            <div class="quiz-badge coming-soon-badge">Coming Soon</div>
+            <div class="quiz-icon">
+                <div class="icon-container">📈</div>
+            </div>
+            
+            <div class="quiz-info">
+                <h3>Tableau Desktop</h3>
+                <div class="quiz-details">
+                    <div class="detail-item">
+                        <span class="detail-icon">📈</span>
+                        <span class="detail-text">Data Visualization</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">🎯</span>
+                        <span class="detail-text">Expert Level</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">🏆</span>
+                        <span class="detail-text">Analytics Certification</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quiz-actions">
+                <button onclick="showComingSoonNotification('tableau-desktop')" class="quiz-action-btn disabled">
+                    <span class="btn-text">Coming Soon</span>
+                    <span class="btn-icon">⏳</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Quiz Configuration Modal -->
+<div id="quiz-config-modal" class="quiz-modal" style="display: none;">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🎯 Configure Your Quiz</h2>
+            <button class="modal-close" onclick="closeQuizConfig()">×</button>
+        </div>
+        
+        <form method="POST" action="{{ url_for('take_quiz') }}" class="config-form">
+            <input type="hidden" id="selected-quiz-type" name="quiz_type" value="">
+            
+            <div class="config-section">
+                <label class="config-label">
+                    <span class="label-icon">❓</span>
+                    <span class="label-text">Number of Questions</span>
+                </label>
+                <div class="question-options">
+                    <div class="option-item">
+                        <input type="radio" id="q-10" name="num_questions" value="10">
+                        <label for="q-10" class="option-label">
+                            <span class="option-number">10</span>
+                            <span class="option-desc">Quick Test</span>
+                        </label>
+                    </div>
+                    <div class="option-item">
+                        <input type="radio" id="q-20" name="num_questions" value="20" checked>
+                        <label for="q-20" class="option-label">
+                            <span class="option-number">20</span>
+                            <span class="option-desc">Standard</span>
+                        </label>
+                    </div>
+                    <div class="option-item">
+                        <input type="radio" id="q-30" name="num_questions" value="30">
+                        <label for="q-30" class="option-label">
+                            <span class="option-number">30</span>
+                            <span class="option-desc">Extended</span>
+                        </label>
+                    </div>
+                    <div class="option-item">
+                        <input type="radio" id="q-50" name="num_questions" value="50">
+                        <label for="q-50" class="option-label">
+                            <span class="option-number">50</span>
+                            <span class="option-desc">Comprehensive</span>
+                        </label>
+                    </div>
+                    <div class="option-item">
+                        <input type="radio" id="q-65" name="num_questions" value="65">
+                        <label for="q-65" class="option-label">
+                            <span class="option-number">65</span>
+                            <span class="option-desc">Full Practice</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <div class="estimated-time">
+                    <span class="time-icon">⏱️</span>
+                    <span class="time-text">Estimated Time: <span id="estimated-time">30 minutes</span></span>
+                </div>
+            </div>
+            
+            <div class="config-actions">
+                <button type="button" onclick="closeQuizConfig()" class="btn-secondary">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary">
+                    <span class="btn-text">Start Quiz</span>
+                    <span class="btn-icon">🚀</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Quiz page enhanced styling */
+.quiz-page-wrapper {
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.quiz-page-wrapper .dashboard-container {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 2rem;
+    margin: 0 auto;
+    max-width: 1200px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.quiz-title {
+    color: #1e293b !important;
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+    text-shadow: none !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.quiz-subtitle {
+    color: #475569 !important;
+    font-size: 1.2rem !important;
+    font-weight: 500 !important;
+    text-shadow: none !important;
+}
+
+/* Quiz page specific styles */
+.quiz-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.quiz-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    position: relative;
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.quiz-card.available:hover {
+    transform: translateY(-8px);
+    border-color: #3b82f6;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.quiz-card.coming-soon {
+    opacity: 0.7;
+}
+
+.quiz-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #3b82f6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.coming-soon-badge {
+    background: #6b7280 !important;
+}
+
+.quiz-icon {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.icon-container {
+    display: inline-block;
+    font-size: 3rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 20px;
+    border: 2px solid #e2e8f0;
+}
+
+.quiz-info h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.quiz-details {
+    margin-bottom: 2rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.detail-icon {
+    font-size: 1.25rem;
+}
+
+.detail-text {
+    font-weight: 500;
+    color: #475569;
+}
+
+.quiz-actions {
+    text-align: center;
+}
+
+.quiz-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    background: #3b82f6;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+}
+
+.quiz-action-btn.primary:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+.quiz-action-btn.disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.quiz-action-btn.disabled:hover {
+    transform: none;
+}
+
+.btn-text {
+    font-weight: 600;
+}
+
+.btn-icon {
+    font-size: 1.1rem;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    color: #3b82f6;
+    text-decoration: none !important;
+    border: 2px solid #3b82f6;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+    background: #3b82f6;
+    color: white;
+    transform: translateY(-2px);
+    text-decoration: none !important;
+}
+
+/* Override any global link styles for quiz page */
+.quiz-page-wrapper a {
+    text-decoration: none !important;
+}
+
+.quiz-page-wrapper a:hover {
+    text-decoration: none !important;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.header-left h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.header-left p {
+    color: #64748b;
+    font-size: 1.1rem;
+}
+
+/* Quiz Configuration Modal Styles */
+.quiz-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.modal-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #6b7280;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.config-section {
+    margin-bottom: 2rem;
+}
+
+.config-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.label-icon {
+    font-size: 1.2rem;
+}
+
+.question-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+}
+
+.option-item {
+    position: relative;
+}
+
+.option-item input[type="radio"] {
+    display: none;
+}
+
+.option-label {
+    display: block;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.option-label:hover {
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+}
+
+.option-item input[type="radio"]:checked + .option-label {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #1e40af;
+}
+
+.option-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.option-desc {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+.estimated-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.time-icon {
+    font-size: 1.2rem;
+}
+
+.time-text {
+    font-weight: 500;
+    color: #475569;
+}
+
+.config-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e5e7eb;
+}
+
+.btn-secondary {
+    padding: 0.75rem 1.5rem;
+    background: white;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+.btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Quiz configuration modal functions
+function showQuizConfig(quizType) {
+    document.getElementById('selected-quiz-type').value = quizType;
+    document.getElementById('quiz-config-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeQuizConfig() {
+    document.getElementById('quiz-config-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function showComingSoonNotification(quizType) {
+    const titles = {
+        'aws-data-engineer': 'AWS Data Engineer',
+        'tableau-desktop': 'Tableau Desktop'
+    };
+    
+    // Create modern notification
+    const notification = document.createElement('div');
+    notification.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2500;">
+            <div style="background: white; padding: 2.5rem; border-radius: 20px; text-align: center; max-width: 400px; margin: 1rem; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🚀</div>
+                <h3 style="margin-bottom: 1rem; color: #3b82f6;">Coming Soon!</h3>
+                <p style="margin-bottom: 0.5rem; color: #4b5563;">${titles[quizType]} quiz is currently in development.</p>
+                <p style="margin-bottom: 2rem; color: #6b7280;">We're working hard to bring you the best learning experience!</p>
+                <button onclick="this.parentElement.parentElement.remove(); document.body.style.overflow = 'auto';" style="background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    document.body.style.overflow = 'hidden';
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+            document.body.style.overflow = 'auto';
+        }
+    }, 5000);
+}
+
+// Time estimation based on number of questions
+function updateEstimatedTime() {
+    const selectedQuestions = document.querySelector('input[name="num_questions"]:checked');
+    if (selectedQuestions) {
+        const numQuestions = parseInt(selectedQuestions.value);
+        const estimatedMinutes = Math.round(numQuestions * 1.5); // 1.5 minutes per question
+        document.getElementById('estimated-time').textContent = estimatedMinutes + ' minutes';
+    }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide flash messages
+    const flashMessages = document.querySelectorAll('.flash-message');
+    flashMessages.forEach(function(message) {
+        setTimeout(function() {
+            message.remove();
+        }, 5000);
+    });
+    
+    // Add event listeners to question options
+    const questionOptions = document.querySelectorAll('input[name="num_questions"]');
+    questionOptions.forEach(option => {
+        option.addEventListener('change', updateEstimatedTime);
+    });
+    
+    // Update initial estimated time
+    updateEstimatedTime();
+    
+    // Close modal when clicking backdrop
+    document.getElementById('quiz-config-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeQuizConfig();
+        }
+    });
+    
+    // Close modal on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('quiz-config-modal');
+            if (modal.style.display === 'flex') {
+                closeQuizConfig();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

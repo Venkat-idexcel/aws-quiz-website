@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Select Quiz Type - AssessIQ Platform{% endblock %}
+
+{% block content %}
+<style>
+/* Clean White Background with Blue Theme */
+.quiz-container {
+    background: #ffffff;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.quiz-hero-section {
+    text-align: center;
+    padding: 3rem 0 2rem 0;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    color: white;
+    margin-bottom: 3rem;
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.quiz-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.quiz-card {
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+}
+
+.quiz-card.available {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.quiz-card.coming-soon {
+    opacity: 0.6;
+    background: #f9fafb;
+}
+
+.quiz-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem 1.5rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+}
+
+.quiz-badge:not(.coming-soon-badge) {
+    background: #3b82f6;
+}
+
+.coming-soon-badge {
+    background: #f59e0b;
+}
+
+.quiz-icon-container {
+    margin: 1.5rem 0;
+}
+
+.quiz-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    color: white;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.quiz-card.coming-soon .quiz-icon {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+    box-shadow: 0 8px 25px rgba(156, 163, 175, 0.3);
+}
+
+.quiz-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1rem;
+}
+
+.quiz-description {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.quiz-features {
+    margin-bottom: 1.5rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    color: #374151;
+    text-align: left;
+}
+
+.feature-icon {
+    font-size: 1.2rem;
+}
+
+.quiz-status {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.quiz-status.available {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.quiz-status.coming-soon {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fed7aa;
+}
+
+.start-quiz-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.start-quiz-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.coming-soon-btn {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+    cursor: not-allowed;
+}
+
+.back-dashboard-section {
+    text-align: center;
+    margin: 3rem 0 2rem 0;
+}
+
+.back-dashboard-btn {
+    background: #f8fafc;
+    color: #475569;
+    border: 2px solid #e2e8f0;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.back-dashboard-btn:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(71, 85, 105, 0.2);
+}
+
+.btn-icon {
+    font-size: 1.1em;
+}
+
+/* Remove all animations and fancy effects */
+@keyframes none {
+    from { transform: none; }
+    to { transform: none; }
+}
+
+* {
+    animation: none !important;
+}
+
+/* Override any floating or complex animations from main CSS */
+.floating-icons,
+.hero-animation,
+.card-glow,
+.icon-ripple,
+.card-hover-effect,
+.btn-ripple {
+    display: none !important;
+}
+</style>
+
+<div class="quiz-container">
+    <div class="quiz-hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Choose Your Learning Path</h1>
+            <p class="hero-subtitle">Elevate your skills with our comprehensive quiz platform</p>
+        </div>
+    </div>
+
+    <div class="quiz-selection-grid">
+        <!-- AWS Cloud Practitioner Quiz -->
+        <div class="quiz-card available">
+            <div class="quiz-badge">Most Popular</div>
+            <div class="quiz-icon-container">
+                <div class="quiz-icon aws-icon">
+                    <span>☁️</span>
+                </div>
+            </div>
+            <div class="quiz-content">
+                <h3 class="quiz-title">AWS Cloud Practitioner</h3>
+                <p class="quiz-description">Master foundational AWS cloud concepts and services</p>
+                <div class="quiz-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">📊</span>
+                        <span>500+ Practice Questions</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">⏱️</span>
+                        <span>Timed Practice Mode</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">📈</span>
+                        <span>Progress Analytics</span>
+                    </div>
+                </div>
+                <div class="quiz-status available">
+                    <span class="status-icon">✨</span>
+                    <span>Available Now</span>
+                </div>
+                <a href="{{ url_for('take_quiz_direct', quiz_type='aws-cloud-practitioner') }}" class="start-quiz-btn">
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-text">Start Quiz</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- AWS Data Engineer Quiz -->
+        <div class="quiz-card coming-soon">
+            <div class="quiz-badge coming-soon-badge">Coming Soon</div>
+            <div class="quiz-icon-container">
+                <div class="quiz-icon data-icon">
+                    <span>🔧</span>
+                </div>
+            </div>
+            <div class="quiz-content">
+                <h3 class="quiz-title">AWS Data Engineer</h3>
+                <p class="quiz-description">Advanced data processing and analytics on AWS</p>
+                <div class="quiz-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">🏗️</span>
+                        <span>Advanced Architecture</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">⚡</span>
+                        <span>Real-time Processing</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">📊</span>
+                        <span>Big Data Analytics</span>
+                    </div>
+                </div>
+                <div class="quiz-status coming-soon">
+                    <span class="status-icon">🔥</span>
+                    <span>Launching Soon</span>
+                </div>
+                <button class="start-quiz-btn coming-soon-btn" disabled>
+                    <span class="btn-icon">🚧</span>
+                    <span class="btn-text">Coming Soon</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tableau Desktop Quiz -->
+        <div class="quiz-card coming-soon">
+            <div class="quiz-badge coming-soon-badge">Coming Soon</div>
+            <div class="quiz-icon-container">
+                <div class="quiz-icon tableau-icon">
+                    <span>📊</span>
+                </div>
+            </div>
+            <div class="quiz-content">
+                <h3 class="quiz-title">Tableau Desktop</h3>
+                <p class="quiz-description">Master data visualization and business intelligence</p>
+                <div class="quiz-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">📊</span>
+                        <span>Interactive Dashboards</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🎨</span>
+                        <span>Advanced Visualizations</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">📈</span>
+                        <span>Business Intelligence</span>
+                    </div>
+                </div>
+                <div class="quiz-status coming-soon">
+                    <span class="status-icon">🎨</span>
+                    <span>In Development</span>
+                </div>
+                <button class="start-quiz-btn coming-soon-btn" disabled>
+                    <span class="btn-icon">🚧</span>
+                    <span class="btn-text">Coming Soon</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Dashboard Button -->
+    <div class="back-dashboard-section">
+        <a href="{{ url_for('dashboard') }}" class="back-dashboard-btn">
+            <span class="btn-icon">←</span>
+            <span>Back to Dashboard</span>
+        </a>
+    </div>
+</div>
+
+{% endblock %}

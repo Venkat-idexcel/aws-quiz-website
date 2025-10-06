@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Idexcel Quiz Platform{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <div class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <p class="admin-subtitle">Platform Overview and User Analytics</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-content">
+                <h3>{{ stats.user_stats.total_users or 0 }}</h3>
+                <p>Total Users</p>
+                <small>{{ stats.user_stats.active_users or 0 }} active</small>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+                <h3>{{ stats.quiz_stats.total_quizzes or 0 }}</h3>
+                <p>Total Quizzes</p>
+                <small>{{ stats.quiz_stats.quizzes_last_7_days or 0 }} this week</small>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-content">
+                <h3>{{ stats.quiz_stats.average_score or 0 }}%</h3>
+                <p>Average Score</p>
+                <small>Platform average</small>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">🆕</div>
+            <div class="stat-content">
+                <h3>{{ stats.user_stats.new_users_30_days or 0 }}</h3>
+                <p>New Users</p>
+                <small>Last 30 days</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="admin-content-grid">
+        <!-- Top Performers -->
+        <div class="admin-card">
+            <div class="card-header">
+                <h2>🏆 Top Performers (Last 30 Days)</h2>
+            </div>
+            <div class="card-content">
+                {% if stats.top_performers %}
+                    <div class="performers-list">
+                        {% for performer in stats.top_performers %}
+                            <div class="performer-item">
+                                <div class="performer-info">
+                                    <strong>{{ performer.first_name }} {{ performer.last_name }}</strong>
+                                    <small>{{ performer.email }}</small>
+                                </div>
+                                <div class="performer-stats">
+                                    <span class="score">{{ performer.avg_score }}% avg</span>
+                                    <span class="count">{{ performer.quiz_count }} quizzes</span>
+                                    <span class="best">{{ performer.best_score }}% best</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="no-data">No quiz data available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="admin-card">
+            <div class="card-header">
+                <h2>🕒 Recent Activities</h2>
+            </div>
+            <div class="card-content">
+                {% if stats.recent_activities %}
+                    <div class="activities-list">
+                        {% for activity in stats.recent_activities %}
+                            <div class="activity-item">
+                                <div class="activity-type">
+                                    {% if activity.activity_type == 'LOGIN' %}
+                                        <span class="activity-icon">🔑</span>
+                                    {% elif activity.activity_type == 'QUIZ_COMPLETED' %}
+                                        <span class="activity-icon">✅</span>
+                                    {% else %}
+                                        <span class="activity-icon">📝</span>
+                                    {% endif %}
+                                </div>
+                                <div class="activity-info">
+                                    <div class="activity-user">{{ activity.first_name }} {{ activity.last_name }}</div>
+                                    <div class="activity-description">{{ activity.activity_description }}</div>
+                                    <div class="activity-time">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="no-data">No recent activities.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="admin-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+            <a href="{{ url_for('admin_users') }}" class="btn btn-primary">
+                👥 Manage Users
+            </a>
+            <a href="{{ url_for('admin_create_admin') }}" class="btn btn-secondary">
+                👨‍💼 Create Admin
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 10px 20px 20px 20px;
+}
+
+.admin-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+.admin-header h1 {
+    color: var(--primary-color);
+    font-size: 2.2rem;
+    margin-bottom: 5px;
+}
+
+.admin-subtitle {
+    color: var(--gray-medium);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stat-icon {
+    font-size: 1.8rem;
+    background: var(--primary-light);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.stat-content p {
+    margin: 5px 0;
+    font-weight: 600;
+    color: var(--gray-dark);
+}
+
+.stat-content small {
+    color: var(--gray-medium);
+}
+
+.admin-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .admin-content-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.card-header {
+    background: var(--primary-light);
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.card-header h2 {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+.card-content {
+    padding: 15px;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.performers-list, .activities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.performer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: var(--background-light);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.performer-info strong {
+    display: block;
+    color: var(--gray-dark);
+}
+
+.performer-info small {
+    color: var(--gray-medium);
+}
+
+.performer-stats {
+    display: flex;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
+.performer-stats span {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: white;
+    color: var(--gray-dark);
+}
+
+.activity-item {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background: var(--background-light);
+    border-radius: 8px;
+}
+
+.activity-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    text-align: center;
+}
+
+.activity-user {
+    font-weight: 600;
+    color: var(--gray-dark);
+}
+
+.activity-description {
+    color: var(--gray-medium);
+    margin: 5px 0;
+}
+
+.activity-time {
+    font-size: 0.8rem;
+    color: var(--gray-light);
+}
+
+.admin-actions {
+    text-align: center;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.no-data {
+    text-align: center;
+    color: var(--gray-medium);
+    font-style: italic;
+    padding: 20px;
+}
+</style>
+{% endblock %}

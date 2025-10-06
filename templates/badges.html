@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}My Badges - Achievement System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">🏆 My Badges & Achievements</h1>
+            
+            <!-- Newly Awarded Badges Alert -->
+            {% if newly_awarded %}
+            <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                <h5 class="alert-heading">🎉 Congratulations! New Badge{{ newly_awarded|length > 1 and 's' or '' }} Earned!</h5>
+                <div class="row">
+                    {% for badge in newly_awarded %}
+                    <div class="col-md-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <span class="badge-icon me-2" style="font-size: 2rem;">{{ badge.icon }}</span>
+                            <div>
+                                <strong>{{ badge.name }}</strong><br>
+                                <small>{{ badge.description }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+            
+            <!-- Badge Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white text-center">
+                        <div class="card-body">
+                            <h3>{{ user_badges|length }}</h3>
+                            <p class="mb-0">Badges Earned</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white text-center">
+                        <div class="card-body">
+                            <h3>{{ ((user_badges|length / 10) * 100)|round|int }}%</h3>
+                            <p class="mb-0">Collection Complete</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-info text-white text-center">
+                        <div class="card-body">
+                            <h3>{{ user_badges|length * 5 }}</h3>
+                            <p class="mb-0">Achievement Points</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User's Badges -->
+            {% if user_badges %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🎯 Your Badge Collection</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for badge in user_badges %}
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card h-100 badge-card" style="border-left: 4px solid {{ badge.color }};">
+                                <div class="card-body text-center">
+                                    <div class="badge-icon mb-3" style="font-size: 3rem; color: {{ badge.color }};">
+                                        {{ badge.icon }}
+                                    </div>
+                                    <h5 class="card-title">{{ badge.name }}</h5>
+                                    <p class="card-text text-muted">{{ badge.description }}</p>
+                                    <small class="text-success">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        Earned {{ badge.awarded_at.strftime('%B %d, %Y') }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4" style="font-size: 4rem; opacity: 0.5;">🎯</div>
+                    <h4 class="text-muted">No Badges Yet</h4>
+                    <p class="text-muted">Complete quizzes and achieve milestones to earn your first badge!</p>
+                    <a href="{{ url_for('quiz') }}" class="btn btn-primary">
+                        <i class="fas fa-play me-2"></i>Take a Quiz
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Available Badges Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">🎪 Available Badges</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">Complete these achievements to earn more badges:</p>
+                    
+                    <div class="row">
+                        <!-- Sample available badges -->
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="card border-dashed">
+                                <div class="card-body text-center">
+                                    <div class="badge-icon mb-2" style="font-size: 2rem; opacity: 0.3;">🎯</div>
+                                    <h6>First Steps</h6>
+                                    <small class="text-muted">Complete your first quiz</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="card border-dashed">
+                                <div class="card-body text-center">
+                                    <div class="badge-icon mb-2" style="font-size: 2rem; opacity: 0.3;">🏆</div>
+                                    <h6>Quiz Master</h6>
+                                    <small class="text-muted">Complete 5 quizzes</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="card border-dashed">
+                                <div class="card-body text-center">
+                                    <div class="badge-icon mb-2" style="font-size: 2rem; opacity: 0.3;">⭐</div>
+                                    <h6>High Achiever</h6>
+                                    <small class="text-muted">Score 90% or higher</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="card border-dashed">
+                                <div class="card-body text-center">
+                                    <div class="badge-icon mb-2" style="font-size: 2rem; opacity: 0.3;">💯</div>
+                                    <h6>Perfect Score</h6>
+                                    <small class="text-muted">Get 100% on a quiz</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="card border-dashed">
+                                <div class="card-body text-center">
+                                    <div class="badge-icon mb-2" style="font-size: 2rem; opacity: 0.3;">⚡</div>
+                                    <h6>Quick Learner</h6>
+                                    <small class="text-muted">Complete quiz in under 5 minutes</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="card border-dashed">
+                                <div class="card-body text-center">
+                                    <div class="badge-icon mb-2" style="font-size: 2rem; opacity: 0.3;">🧠</div>
+                                    <h6>Knowledge Seeker</h6>
+                                    <small class="text-muted">Answer 100 questions correctly</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.badge-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.badge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.border-dashed {
+    border: 2px dashed #dee2e6;
+}
+
+.badge-icon {
+    display: inline-block;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    .badge-icon {
+        font-size: 2rem !important;
+    }
+}
+</style>
+{% endblock %}

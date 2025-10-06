@@ -1,0 +1,807 @@
+{% extends "base.html" %}
+
+{% block title %}Select Quiz Type - AssessIQ Platform{% endblock %}
+
+{% block content %}
+<style>
+/* Clean White Background with Blue Theme */
+.quiz-container {
+    background: #ffffff;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.quiz-hero-section {
+    text-align: center;
+    padding: 3rem 0 2rem 0;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    color: white;
+    margin-bottom: 3rem;
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.quiz-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.quiz-card {
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+}
+
+.quiz-card.available {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.quiz-card.coming-soon {
+    opacity: 0.6;
+    background: #f9fafb;
+}
+
+.quiz-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem 1.5rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+}
+
+.quiz-badge:not(.coming-soon-badge) {
+    background: #3b82f6;
+}
+
+.coming-soon-badge {
+    background: #f59e0b;
+}
+
+.quiz-icon-container {
+    margin: 1.5rem 0;
+}
+
+.quiz-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    color: white;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.quiz-card.coming-soon .quiz-icon {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+    box-shadow: 0 8px 25px rgba(156, 163, 175, 0.3);
+}
+
+.quiz-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1rem;
+}
+
+.quiz-description {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.quiz-features {
+    margin-bottom: 1.5rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    color: #374151;
+    text-align: left;
+}
+
+.feature-icon {
+    font-size: 1.2rem;
+}
+
+.quiz-status {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.quiz-status.available {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.quiz-status.coming-soon {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fed7aa;
+}
+
+.start-quiz-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.start-quiz-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.coming-soon-btn {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+    cursor: not-allowed;
+}
+
+.back-dashboard-section {
+    text-align: center;
+    margin: 3rem 0 2rem 0;
+}
+
+.back-dashboard-btn {
+    background: #f8fafc;
+    color: #475569;
+    border: 2px solid #e2e8f0;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.back-dashboard-btn:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(71, 85, 105, 0.2);
+}
+
+.btn-icon {
+    font-size: 1.1em;
+}
+
+/* Remove all animations and fancy effects */
+@keyframes none {
+    from { transform: none; }
+    to { transform: none; }
+}
+
+* {
+    animation: none !important;
+}
+
+/* Override any floating or complex animations from main CSS */
+.floating-icons,
+.hero-animation,
+.card-glow,
+.icon-ripple,
+.card-hover-effect,
+.btn-ripple {
+    display: none !important;
+}
+</style>
+
+<div class="quiz-container">
+    <div class="quiz-hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Choose Your Learning Path</h1>
+            <p class="hero-subtitle">Elevate your skills with our comprehensive quiz platform</p>
+        </div>
+    </div>
+
+    <div class="quiz-selection-grid">
+        <!-- AWS Cloud Practitioner Quiz -->
+        <div class="quiz-card available">
+            <div class="quiz-badge">Most Popular</div>
+            <div class="quiz-icon-container">
+                <div class="quiz-icon aws-icon">
+                    <span>☁️</span>
+                </div>
+            </div>
+            <div class="quiz-content">
+                <h3 class="quiz-title">AWS Cloud Practitioner</h3>
+                <p class="quiz-description">Master foundational AWS cloud concepts and services</p>
+                <div class="quiz-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">📊</span>
+                        <span>500+ Practice Questions</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">⏱️</span>
+                        <span>Timed Practice Mode</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">📈</span>
+                        <span>Progress Analytics</span>
+                    </div>
+                </div>
+                <div class="quiz-status available">
+                    <span class="status-icon">✨</span>
+                    <span>Available Now</span>
+                </div>
+                <a href="{{ url_for('take_quiz_direct', quiz_type='aws-cloud-practitioner') }}" class="start-quiz-btn">
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-text">Start Quiz</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- AWS Data Engineer Quiz -->
+        <div class="quiz-card coming-soon">
+            <div class="quiz-badge coming-soon-badge">Coming Soon</div>
+            <div class="quiz-icon-container">
+                <div class="quiz-icon data-icon">
+                    <span>🔧</span>
+                </div>
+            </div>
+            <div class="quiz-content">
+                <h3 class="quiz-title">AWS Data Engineer</h3>
+                <p class="quiz-description">Advanced data processing and analytics on AWS</p>
+                <div class="quiz-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">🏗️</span>
+                        <span>Advanced Architecture</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">⚡</span>
+                        <span>Real-time Processing</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">📊</span>
+                        <span>Big Data Analytics</span>
+                    </div>
+                </div>
+                <div class="quiz-status coming-soon">
+                    <span class="status-icon">🔥</span>
+                    <span>Launching Soon</span>
+                </div>
+                <button class="start-quiz-btn coming-soon-btn" disabled>
+                    <span class="btn-icon">🚧</span>
+                    <span class="btn-text">Coming Soon</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tableau Desktop Quiz -->
+        <div class="quiz-card coming-soon">
+            <div class="quiz-badge coming-soon-badge">Coming Soon</div>
+            <div class="quiz-icon-container">
+                <div class="quiz-icon tableau-icon">
+                    <span>�</span>
+                </div>
+            </div>
+            <div class="quiz-content">
+                <h3 class="quiz-title">Tableau Desktop</h3>
+                <p class="quiz-description">Master data visualization and business intelligence</p>
+                <div class="quiz-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">📊</span>
+                        <span>Interactive Dashboards</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🎨</span>
+                        <span>Advanced Visualizations</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">📈</span>
+                        <span>Business Intelligence</span>
+                    </div>
+                </div>
+                <div class="quiz-status coming-soon">
+                    <span class="status-icon">�</span>
+                    <span>In Development</span>
+                </div>
+                <button class="start-quiz-btn coming-soon-btn" disabled>
+                    <span class="btn-icon">🚧</span>
+                    <span class="btn-text">Coming Soon</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Dashboard Button -->
+    <div class="back-dashboard-section">
+        <a href="{{ url_for('dashboard') }}" class="back-dashboard-btn">
+            <span class="btn-icon">←</span>
+            <span>Back to Dashboard</span>
+        </a>
+    </div>
+</div>
+
+<div class="quiz-selection-grid">
+    <!-- AWS Cloud Practitioner Quiz -->
+    <div class="quiz-card premium available">
+        <div class="card-glow"></div>
+        <div class="quiz-badge">Most Popular</div>
+        <div class="quiz-icon-container">
+            <div class="quiz-icon aws-icon">
+                <span>☁️</span>
+            </div>
+            <div class="icon-ripple"></div>
+        </div>
+        <div class="quiz-content">
+            <h3 class="quiz-title">AWS Cloud Practitioner</h3>
+            <p class="quiz-description">Master foundational AWS cloud concepts and services</p>
+            <div class="quiz-features">
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span>500+ Practice Questions</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⏱️</span>
+                    <span>Timed Practice Mode</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📈</span>
+                    <span>Progress Analytics</span>
+                </div>
+            </div>
+            <div class="quiz-status available">
+                <span class="status-icon">✨</span>
+                <span>Start Learning Now</span>
+            </div>
+            <div class="quiz-action-button">
+                <button class="start-quiz-btn" onclick="selectQuiz('aws-cloud-practitioner')">
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-text">Start Quiz</span>
+                    <div class="btn-ripple"></div>
+                </button>
+            </div>
+        </div>
+        <div class="card-hover-effect"></div>
+    </div>
+
+    <!-- AWS Data Engineer Quiz -->
+    <div class="quiz-card premium coming-soon">
+        <div class="card-glow coming-soon-glow"></div>
+        <div class="quiz-badge coming-soon-badge">Coming Soon</div>
+        <div class="quiz-icon-container">
+            <div class="quiz-icon data-icon">
+                <span>🔧</span>
+            </div>
+            <div class="icon-ripple"></div>
+        </div>
+        <div class="quiz-content">
+            <h3 class="quiz-title">AWS Data Engineer</h3>
+            <p class="quiz-description">Advanced data processing and analytics on AWS</p>
+            <div class="quiz-features">
+                <div class="feature-item">
+                    <span class="feature-icon">🏗️</span>
+                    <span>Advanced Architecture</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span>Real-time Processing</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span>Big Data Analytics</span>
+                </div>
+            </div>
+            <div class="quiz-status coming-soon">
+                <span class="status-icon">�</span>
+                <span>Launching Soon</span>
+            </div>
+        </div>
+        <div class="card-hover-effect"></div>
+    </div>
+
+    <!-- Tableau Desktop Quiz -->
+    <div class="quiz-card premium coming-soon" onclick="selectQuiz('tableau-desktop')">
+        <div class="card-glow coming-soon-glow"></div>
+        <div class="quiz-badge coming-soon-badge">Coming Soon</div>
+        <div class="quiz-icon-container">
+            <div class="quiz-icon tableau-icon">
+                <span>📊</span>
+            </div>
+            <div class="icon-ripple"></div>
+        </div>
+        <div class="quiz-content">
+            <h3 class="quiz-title">Tableau Desktop</h3>
+            <p class="quiz-description">Master data visualization and business intelligence</p>
+            <div class="quiz-features">
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span>Interactive Dashboards</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🎨</span>
+                    <span>Advanced Visualizations</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📈</span>
+                    <span>Business Intelligence</span>
+                </div>
+            </div>
+            <div class="quiz-status coming-soon">
+                <span class="status-icon">🎨</span>
+                <span>In Development</span>
+            </div>
+        </div>
+        <div class="card-hover-effect"></div>
+    </div>
+</div>
+
+<!-- Quiz Configuration Modal -->
+<div id="quiz-config-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Configure Your Quiz</h3>
+            <button class="modal-close" onclick="closeQuizConfig()">&times;</button>
+        </div>
+        
+        <form method="POST" action="{{ url_for('take_quiz') }}" id="quiz-form">
+            <input type="hidden" name="quiz_type" id="selected-quiz-type" value="">
+            
+            <div class="form-group">
+                <label for="num_questions" class="form-label">📝 Number of Questions</label>
+                <div class="select-wrapper">
+                    <select id="num_questions" name="num_questions" class="form-input modern-select">
+                        <option value="10">10 Questions - Quick Practice (15 mins)</option>
+                        <option value="20" selected>20 Questions - Standard (30 mins)</option>
+                        <option value="30">30 Questions - Extended (45 mins)</option>
+                        <option value="50">50 Questions - Challenge (75 mins)</option>
+                        <option value="65">65 Questions - Full Exam (90 mins)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="quiz-info-panel">
+                <div class="info-header">
+                    <span class="info-icon">💡</span>
+                    <h4>Quiz Features</h4>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="item-icon">🔀</span>
+                        <span>Randomized questions from comprehensive database</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="item-icon">⏱️</span>
+                        <span>Real-time progress tracking</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="item-icon">📊</span>
+                        <span>Detailed performance analytics</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="item-icon">💾</span>
+                        <span>Complete quiz history</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeQuizConfig()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <span class="btn-icon">🚀</span>
+                    Start Quiz
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+            <button type="submit" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                🚀 Start Quiz
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="goBackToSelection()">
+                ← Back to Selection
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+/* Reset any potential floating or positioning issues */
+* {
+    position: static !important;
+}
+
+body, html {
+    overflow-x: hidden;
+}
+
+.container {
+    position: relative !important;
+    overflow: hidden;
+}
+
+.quiz-selection-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.quiz-card {
+    background: var(--background-white);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border: 2px solid var(--border-color);
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative !important;
+}
+
+.quiz-card.available {
+    cursor: pointer;
+    border-color: var(--primary-blue);
+}
+
+.quiz-card.available:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(41, 128, 185, 0.2);
+    border-color: var(--accent-teal);
+}
+
+.quiz-card.coming-soon {
+    opacity: 0.7;
+    background: var(--background-light);
+    cursor: not-allowed;
+}
+
+.quiz-icon {
+    margin-bottom: 1rem;
+}
+
+.quiz-card h3 {
+    color: var(--primary-blue);
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+}
+
+.quiz-description {
+    color: var(--gray-medium);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.quiz-status {
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.quiz-status.available {
+    background: rgba(39, 174, 96, 0.1);
+    color: var(--success);
+    border: 2px solid var(--success);
+}
+
+.quiz-status.coming-soon {
+    background: rgba(241, 196, 15, 0.1);
+    color: var(--warning);
+    border: 2px solid var(--warning);
+}
+
+.quiz-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.detail-item {
+    color: var(--gray-medium);
+    font-size: 0.9rem;
+    padding: 0.3rem;
+}
+
+.quiz-card.available .detail-item {
+    color: var(--primary-blue);
+}
+
+.quiz-card.selected {
+    border-color: var(--accent-teal);
+    background: rgba(26, 188, 156, 0.05);
+}
+
+@media (max-width: 768px) {
+    .quiz-selection-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .quiz-card {
+        padding: 1.5rem;
+    }
+}
+</style>
+
+<script>
+function selectQuiz(quizType) {
+    if (quizType === 'aws-cloud-practitioner') {
+        // Show the configuration form
+        document.getElementById('quiz-config-form').style.display = 'block';
+        document.getElementById('selected-quiz-type').value = quizType;
+        
+        // Hide quiz selection
+        document.querySelector('.quiz-selection-container').style.display = 'none';
+        
+        // Scroll to form
+        document.getElementById('quiz-config-form').scrollIntoView({ behavior: 'smooth' });
+    } else {
+        // Show coming soon message
+        alert('This quiz type is coming soon! Please check back later for ' + 
+              (quizType === 'aws-data-engineer' ? 'AWS Data Engineer' : 'Tableau Desktop') + 
+              ' practice questions.');
+    }
+}
+
+function goBackToSelection() {
+    // Hide configuration form
+    document.getElementById('quiz-config-form').style.display = 'none';
+    
+    // Show quiz selection
+    document.querySelector('.quiz-selection-container').style.display = 'grid';
+    
+    // Scroll to top
+    document.querySelector('.dashboard-header').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Additional quiz functionality
+let selectedQuizType = '';
+
+function selectQuiz(quizType) {
+    if (quizType === 'aws-cloud-practitioner') {
+        // Show modal with smooth animation
+        const modal = document.getElementById('quiz-config-modal');
+        document.getElementById('selected-quiz-type').value = quizType;
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } else {
+        // Enhanced coming soon notification
+        showComingSoonNotification(quizType);
+    }
+}
+
+function closeQuizConfig() {
+    const modal = document.getElementById('quiz-config-modal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function showComingSoonNotification(quizType) {
+    const titles = {
+        'aws-data-engineer': 'AWS Data Engineer',
+        'tableau-desktop': 'Tableau Desktop'
+    };
+    
+    // Create modern notification
+    const notification = document.createElement('div');
+    notification.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2500;">
+            <div style="background: white; padding: 2.5rem; border-radius: 20px; text-align: center; max-width: 400px; margin: 1rem; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🚀</div>
+                <h3 style="margin-bottom: 1rem; color: #667eea;">Coming Soon!</h3>
+                <p style="margin-bottom: 0.5rem; color: #4b5563;">${titles[quizType]} quiz is currently in development.</p>
+                <p style="margin-bottom: 2rem; color: #6b7280;">We're working hard to bring you the best learning experience!</p>
+                <button onclick="this.parentElement.parentElement.remove(); document.body.style.overflow = 'auto';" class="btn btn-primary">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    document.body.style.overflow = 'hidden';
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+            document.body.style.overflow = 'auto';
+        }
+    }, 5000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('quiz-form');
+    
+    if (form) {
+        form.addEventListener('submit', function() {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<span class="btn-icon">⏳</span> Starting Quiz...';
+            submitBtn.disabled = true;
+        });
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('quiz-config-modal');
+            if (modal && modal.style.display === 'flex') {
+                closeQuizConfig();
+            }
+        }
+    });
+    
+    // Click outside modal to close
+    const modal = document.getElementById('quiz-config-modal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeQuizConfig();
+            }
+        });
+    }
+
+    // Auto-hide flash messages
+    const flashMessages = document.querySelectorAll('.flash-message');
+    flashMessages.forEach(function(message) {
+        setTimeout(function() {
+            message.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(function() {
+                message.remove();
+            }, 300);
+        }, 5000);
+    });
+});
+</script>
+{% endblock %}

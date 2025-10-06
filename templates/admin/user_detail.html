@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.first_name }} {{ user.last_name }} - User Details{% endblock %}
+
+{% block content %}
+<div class="admin-user-detail">
+    <div class="admin-header">
+        <div class="header-actions">
+            <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">← Back to Users</a>
+        </div>
+        <h1>👤 User Details</h1>
+    </div>
+
+    <!-- User Profile Card -->
+    <div class="user-profile-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {{ user.first_name[0] }}{{ user.last_name[0] }}
+            </div>
+            <div class="profile-info">
+                <h2>{{ user.first_name }} {{ user.last_name }}</h2>
+                <p class="username">@{{ user.username }}</p>
+                <p class="email">{{ user.email }}</p>
+                <span class="status-badge {{ 'active' if user.is_active else 'inactive' }}">
+                    {{ 'Active' if user.is_active else 'Inactive' }}
+                </span>
+            </div>
+        </div>
+
+        <div class="profile-stats">
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <h3>{{ user.total_quizzes or 0 }}</h3>
+                    <p>Total Quizzes</p>
+                </div>
+                <div class="stat-item">
+                    <h3>{{ user.average_score or 0 }}%</h3>
+                    <p>Average Score</p>
+                </div>
+                <div class="stat-item">
+                    <h3>{{ user.best_score or 0 }}%</h3>
+                    <p>Best Score</p>
+                </div>
+                <div class="stat-item">
+                    <h3>{{ (user.total_time_spent_minutes or 0) // 60 }}h {{ (user.total_time_spent_minutes or 0) % 60 }}m</h3>
+                    <p>Total Time</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-details">
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <strong>Registration Date:</strong>
+                    <span>{{ user.created_at.strftime('%B %d, %Y at %H:%M') if user.created_at else 'Unknown' }}</span>
+                </div>
+                <div class="detail-item">
+                    <strong>Last Login:</strong>
+                    <span>
+                        {% if user.last_login %}
+                            {{ user.last_login.strftime('%B %d, %Y at %H:%M') }}
+                        {% else %}
+                            <em>Never logged in</em>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <strong>Last Quiz:</strong>
+                    <span>
+                        {% if user.last_quiz_date %}
+                            {{ user.last_quiz_date.strftime('%B %d, %Y at %H:%M') }}
+                        {% else %}
+                            <em>No quizzes taken</em>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <strong>Questions Answered:</strong>
+                    <span>{{ user.total_questions_answered or 0 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Tabs -->
+    <div class="content-tabs">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="showTab('quiz-history')">📊 Quiz History</button>
+            <button class="tab-button" onclick="showTab('activities')">🕒 Activities</button>
+        </div>
+
+        <!-- Quiz History Tab -->
+        <div id="quiz-history" class="tab-content active">
+            <div class="section-header">
+                <h3>Quiz History</h3>
+                <p>Complete record of all quizzes taken by this user</p>
+            </div>
+
+            {% if quiz_history %}
+                <div class="quiz-history-table">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Questions</th>
+                                <th>Correct</th>
+                                <th>Score</th>
+                                <th>Time Taken</th>
+                                <th>Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for quiz in quiz_history %}
+                            <tr>
+                                <td>{{ quiz.completed_at.strftime('%Y-%m-%d %H:%M') if quiz.completed_at else quiz.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ quiz.total_questions }}</td>
+                                <td class="correct-count">{{ quiz.correct_answers }}</td>
+                                <td class="score-cell">
+                                    <span class="score-badge score-{{ 'excellent' if quiz.score_percentage >= 90 else 'good' if quiz.score_percentage >= 70 else 'average' }}">
+                                        {{ quiz.score_percentage }}%
+                                    </span>
+                                </td>
+                                <td>{{ quiz.time_taken_minutes }} min</td>
+                                <td class="performance-cell">
+                                    {% if quiz.score_percentage >= 90 %}
+                                        <span class="performance excellent">🌟 Excellent</span>
+                                    {% elif quiz.score_percentage >= 80 %}
+                                        <span class="performance good">👍 Good</span>
+                                    {% elif quiz.score_percentage >= 70 %}
+                                        <span class="performance average">👌 Average</span>
+                                    {% else %}
+                                        <span class="performance poor">📚 Needs Improvement</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="no-data">
+                    <p>This user hasn't taken any quizzes yet.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Activities Tab -->
+        <div id="activities" class="tab-content">
+            <div class="section-header">
+                <h3>User Activities</h3>
+                <p>Track all user interactions and system events</p>
+            </div>
+
+            {% if activities %}
+                <div class="activities-list">
+                    {% for activity in activities %}
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            {% if activity.activity_type == 'LOGIN' %}
+                                🔑
+                            {% elif activity.activity_type == 'QUIZ_COMPLETED' %}
+                                ✅
+                            {% elif activity.activity_type == 'QUIZ_STARTED' %}
+                                ▶️
+                            {% else %}
+                                📝
+                            {% endif %}
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-header">
+                                <span class="activity-type">{{ activity.activity_type.replace('_', ' ').title() }}</span>
+                                <span class="activity-time">{{ activity.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                            </div>
+                            <div class="activity-description">{{ activity.activity_description }}</div>
+                            {% if activity.ip_address %}
+                                <div class="activity-meta">
+                                    <small>IP: {{ activity.ip_address }}</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-data">
+                    <p>No activities recorded for this user.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-user-detail {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.admin-header {
+    position: relative;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.header-actions {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.admin-header h1 {
+    color: var(--primary-color);
+    font-size: 2.2rem;
+    margin: 0;
+}
+
+.user-profile-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    border: 3px solid rgba(255,255,255,0.3);
+}
+
+.profile-info h2 {
+    margin: 0 0 5px 0;
+    font-size: 2rem;
+}
+
+.username {
+    opacity: 0.9;
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+}
+
+.email {
+    opacity: 0.8;
+    margin: 0 0 15px 0;
+}
+
+.status-badge {
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.active {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
+
+.status-badge.inactive {
+    background: rgba(244, 67, 54, 0.2);
+    color: #F44336;
+}
+
+.profile-stats {
+    padding: 30px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 15px;
+    background: var(--background-light);
+    border-radius: 10px;
+}
+
+.stat-item h3 {
+    margin: 0;
+    font-size: 2rem;
+    color: var(--primary-color);
+}
+
+.stat-item p {
+    margin: 5px 0 0 0;
+    color: var(--gray-medium);
+}
+
+.profile-details {
+    padding: 30px;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.detail-item strong {
+    color: var(--gray-dark);
+    font-size: 0.9rem;
+}
+
+.detail-item span {
+    color: var(--gray-medium);
+}
+
+.content-tabs {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.tab-buttons {
+    display: flex;
+    background: var(--background-light);
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-medium);
+    transition: all 0.3s ease;
+}
+
+.tab-button.active {
+    background: white;
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.tab-content {
+    display: none;
+    padding: 30px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.section-header {
+    margin-bottom: 25px;
+}
+
+.section-header h3 {
+    color: var(--primary-color);
+    margin: 0 0 5px 0;
+    font-size: 1.5rem;
+}
+
+.section-header p {
+    color: var(--gray-medium);
+    margin: 0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.data-table th {
+    background: var(--primary-color);
+    color: white;
+    padding: 15px;
+    text-align: left;
+}
+
+.data-table td {
+    padding: 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.correct-count {
+    font-weight: 600;
+    color: var(--success-color);
+}
+
+.score-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.score-excellent {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.score-good {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.score-average {
+    background: #fce4ec;
+    color: #c2185b;
+}
+
+.performance {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.activities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    gap: 15px;
+    padding: 20px;
+    background: var(--background-light);
+    border-radius: 10px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.activity-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    text-align: center;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.activity-type {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.activity-time {
+    font-size: 0.9rem;
+    color: var(--gray-medium);
+}
+
+.activity-description {
+    color: var(--gray-dark);
+    margin-bottom: 5px;
+}
+
+.activity-meta small {
+    color: var(--gray-light);
+}
+
+.no-data {
+    text-align: center;
+    padding: 50px;
+    color: var(--gray-medium);
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-grid, .detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tab-buttons {
+        flex-direction: column;
+    }
+    
+    .activity-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+</style>
+
+<script>
+function showTab(tabId) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabId).classList.add('active');
+    
+    // Activate corresponding button
+    event.target.classList.add('active');
+}
+</script>
+{% endblock %}

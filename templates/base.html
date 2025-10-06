@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AssessIQ - Professional Learning Platform{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- Google Fonts for Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Meta tags for better SEO and social sharing -->
+    <meta name="description" content="Professional learning platform with interactive quizzes for AWS, Tableau, and more. Track your progress and master technical skills.">
+    <meta name="keywords" content="AWS certification, Tableau training, technical quizzes, professional development">
+    <meta name="author" content="AssessIQ">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="{% block og_title %}AssessIQ - Professional Learning Platform{% endblock %}">
+    <meta property="og:description" content="Master technical skills with our interactive quiz platform">
+    <meta property="og:type" content="website">
+    
+    <style>
+        /* Enhanced Navigation Styles */
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        /* Remove underlines from all navigation links */
+        .nav-links a {
+            text-decoration: none !important;
+            color: #1e293b !important;
+            font-weight: 600 !important;
+            padding: 0.75rem 1.25rem;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            text-decoration: none !important;
+            color: #1d4ed8 !important;
+            background: rgba(59, 130, 246, 0.1) !important;
+            transform: translateY(-2px);
+        }
+        
+        .admin-link {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+            color: white !important;
+            padding: 0.75rem 1.25rem;
+            border-radius: 25px;
+            text-decoration: none !important;
+            font-weight: 700 !important;
+            font-size: 0.95rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            display: inline-flex !important;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .admin-link:hover {
+            text-decoration: none !important;
+            color: white !important;
+        }
+        
+        .admin-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .admin-link:hover::before {
+            left: 100%;
+        }
+        
+        .admin-link:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #0f3460 100%) !important;
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+            color: white !important;
+        }
+        
+        .nav-divider {
+            width: 2px;
+            height: 35px;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.5), transparent);
+            margin: 0 0.5rem;
+            border-radius: 2px;
+        }
+
+        /* Dropdown Menu Styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            color: #4b5563;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dropdown-toggle:hover {
+            background-color: #f3f4f6;
+            transform: scale(1.1);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            min-width: 200px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            border: 1px solid #e5e7eb;
+        }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #374151;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .dropdown-menu a:first-child {
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        .dropdown-menu a:last-child {
+            border-bottom: none;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        .dropdown-menu a:hover {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .dropdown-menu a span {
+            margin-right: 0.5rem;
+        }
+
+        /* OAuth Button Styles */
+        .oauth-divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+            color: #6b7280;
+        }
+
+        .oauth-divider::before,
+        .oauth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+        }
+
+        .oauth-divider-text {
+            padding: 0 1rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+            background: white;
+        }
+
+        .oauth-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .oauth-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: white;
+            gap: 0.75rem;
+        }
+
+        .oauth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+        }
+
+        .oauth-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .oauth-google {
+            border-color: #ea4335;
+            color: #ea4335;
+        }
+
+        .oauth-google:hover {
+            background: #ea4335;
+            color: white;
+            border-color: #ea4335;
+        }
+
+        .oauth-github {
+            border-color: #24292e;
+            color: #24292e;
+        }
+
+        .oauth-github:hover {
+            background: #24292e;
+            color: white;
+            border-color: #24292e;
+        }
+
+        .oauth-microsoft {
+            border-color: #0078d4;
+            color: #0078d4;
+        }
+
+        .oauth-microsoft:hover {
+            background: #0078d4;
+            color: white;
+            border-color: #0078d4;
+        }
+
+        @media (min-width: 768px) {
+            .oauth-buttons {
+                flex-direction: row;
+                gap: 1rem;
+            }
+
+            .oauth-btn {
+                flex: 1;
+            }
+        }
+        
+        /* Loading Animation */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            visibility: visible;
+            transition: all 0.5s ease;
+        }
+        
+        .page-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loader-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Scroll to top button */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .scroll-to-top:hover {
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        @media (max-width: 1024px) {
+            .nav-links {
+                gap: 1rem;
+            }
+            
+            .admin-link {
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .nav-divider {
+                height: 30px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 0.5rem;
+            }
+            
+            .admin-link {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+            }
+            
+            .scroll-to-top {
+                bottom: 1rem;
+                right: 1rem;
+                width: 45px;
+                height: 45px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-right {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+            
+            .admin-link {
+                padding: 5px 8px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <h3>Loading AssessIQ...</h3>
+            <p>Preparing your learning experience</p>
+        </div>
+    </div>
+
+    {% if session.user_id %}
+    <header class="header">
+        <div class="container">
+            <a href="{{ url_for('dashboard') }}" class="logo">
+                <img src="{{ url_for('static', filename='img/idexcel-AssessIQ.png') }}" alt="AssessIQ Professional Platform" style="height: 72px;">
+            </a>
+            <div class="header-right">
+                <nav class="nav-links">
+                    {% if session.get('is_admin', False) %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="nav-link admin-link">
+                            <span style="margin-right: 0.5rem;">🛡️</span>Dashboard
+                        </a>
+                        <a href="{{ url_for('admin_users') }}" class="nav-link admin-link">
+                            <span style="margin-right: 0.5rem;">👥</span>Users
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+                        <a href="{{ url_for('quiz') }}">🎯 Take Quiz</a>
+                        <a href="{{ url_for('quiz_history') }}">📚 History</a>
+                        <div class="dropdown">
+                            <button class="dropdown-toggle" onclick="toggleDropdown()" aria-label="More options">
+                                ⋯
+                            </button>
+                            <div class="dropdown-menu" id="dropdownMenu">
+                                <a href="{{ url_for('user_badges') }}">
+                                    <span>🏅</span>Badges
+                                </a>
+                                <a href="{{ url_for('leaderboard') }}">
+                                    <span>🏆</span>Leaderboard
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </nav>
+                <div class="user-info">
+                    {% if session.get('is_admin', False) %}
+                        <span style="background: linear-gradient(135deg, #ffd700, #ffed4a); color: #1a202c; padding: 0.25rem 0.75rem; border-radius: 15px; font-weight: 600; font-size: 0.8rem;">ADMIN</span>
+                    {% endif %}
+                    <span style="font-weight: 500;">Welcome, {{ session.first_name }}! 👋</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-secondary">
+                        <span style="margin-right: 0.5rem;">🚪</span>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+    {% endif %}
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Enhanced Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">
+                                <div class="flash-icon">
+                                    {% if category == 'success' %}🎉
+                                    {% elif category == 'error' %}⚠️
+                                    {% elif category == 'warning' %}🔔
+                                    {% else %}ℹ️
+                                    {% endif %}
+                                </div>
+                                <div class="flash-content">{{ message|safe }}</div>
+                                <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollToTop" onclick="scrollToTop()">
+        ↑
+    </button>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Page loading animation
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                document.getElementById('pageLoader').classList.add('hidden');
+                setTimeout(function() {
+                    document.getElementById('pageLoader').style.display = 'none';
+                }, 500);
+            }, 1000);
+        });
+
+        // Scroll to top functionality
+        window.addEventListener('scroll', function() {
+            const scrollToTopBtn = document.getElementById('scrollToTop');
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Enhanced flash message animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message, index) {
+                // Stagger animation
+                setTimeout(function() {
+                    message.style.animation = 'slideInRight 0.5s ease-out';
+                }, index * 200);
+                
+                // Auto-hide after 5 seconds
+                setTimeout(function() {
+                    if (message.parentElement) {
+                        message.style.animation = 'slideOutRight 0.5s ease-out';
+                        setTimeout(function() {
+                            message.remove();
+                        }, 500);
+                    }
+                }, 5000 + (index * 200));
+            });
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            // Alt + H for home/dashboard
+            if (e.altKey && e.key === 'h') {
+                window.location.href = '{{ url_for("dashboard") if session.user_id }}';
+            }
+            // Alt + Q for quiz
+            if (e.altKey && e.key === 'q') {
+                window.location.href = '{{ url_for("quiz") if session.user_id }}';
+            }
+            // Alt + L for logout
+            if (e.altKey && e.key === 'l') {
+                window.location.href = '{{ url_for("logout") if session.user_id }}';
+            }
+        });
+
+        // Dropdown menu functionality
+        function toggleDropdown() {
+            const dropdown = document.getElementById('dropdownMenu');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('dropdownMenu');
+            const dropdownToggle = event.target.closest('.dropdown-toggle');
+            
+            if (!dropdownToggle && dropdown) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Close dropdown when pressing Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const dropdown = document.getElementById('dropdownMenu');
+                if (dropdown) {
+                    dropdown.classList.remove('show');
+                }
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

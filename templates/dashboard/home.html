@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Idexcel Quiz Platform{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-title">Idexcel Quiz Platform</h1>
+    <p class="welcome-message">Welcome back, {{ session.first_name }} {{ session.last_name }}!</p>
+</div>
+
+<div class="dashboard-grid">
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.total_quizzes }}</span>
+        <span class="stat-label">Quizzes Completed</span>
+    </div>
+    
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.average_score }}%</span>
+        <span class="stat-label">Average Score</span>
+    </div>
+    
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.best_score }}%</span>
+        <span class="stat-label">Best Score</span>
+    </div>
+    
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.total_questions_answered }}</span>
+        <span class="stat-label">Questions Answered</span>
+    </div>
+</div>
+
+<div class="action-buttons">
+    <a href="{{ url_for('quiz') }}" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+        🚀 Take New Quiz
+    </a>
+    
+    <a href="{{ url_for('quiz_history') }}" class="btn btn-secondary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+        📊 View Quiz History
+    </a>
+</div>
+
+{% if stats.total_quizzes == 0 %}
+<div class="card mt-4" style="text-align: center; background: var(--background-white);">
+    <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">Ready to Start?</h3>
+    <p style="color: var(--gray-medium); margin-bottom: 1.5rem;">
+        Welcome to the Idexcel Quiz Platform! Test your AWS Cloud Practitioner knowledge with our comprehensive question bank of 620+ questions.
+    </p>
+    <a href="{{ url_for('quiz') }}" class="btn btn-primary">Take Your First Quiz</a>
+</div>
+{% endif %}
+
+{% if stats.total_quizzes > 0 %}
+<div class="card mt-4" style="background: var(--background-white);">
+    <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">Your Progress</h3>
+    
+    {% set progress_percentage = (stats.average_score) %}
+    <div class="progress-bar" style="margin-bottom: 1rem;">
+        <div class="progress-fill" style="width: {{ progress_percentage }}%;"></div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: center;">
+        <div>
+            <div style="color: var(--primary-blue); font-size: 1.5rem; font-weight: bold;">
+                {{ stats.average_score }}%
+            </div>
+            <div style="color: var(--gray-medium); font-size: 0.9rem;">Average Performance</div>
+        </div>
+        
+        {% if stats.average_score >= 70 %}
+        <div style="color: var(--success);">
+            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">🎉 Excellent!</div>
+            <div style="font-size: 0.9rem;">You're ready for the AWS Cloud Practitioner exam!</div>
+        </div>
+        {% elif stats.average_score >= 50 %}
+        <div style="color: var(--warning);">
+            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">🚀 Good Progress!</div>
+            <div style="font-size: 0.9rem;">Keep practicing to improve your score.</div>
+        </div>
+        {% else %}
+        <div style="color: var(--info);">
+            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">📚 Keep Learning!</div>
+            <div style="font-size: 0.9rem;">More practice will help you improve.</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate stats on load
+    const statNumbers = document.querySelectorAll('.stat-number');
+    statNumbers.forEach(function(stat) {
+        const targetValue = parseFloat(stat.textContent);
+        let currentValue = 0;
+        const increment = targetValue / 50;
+        
+        const animateValue = function() {
+            currentValue += increment;
+            if (currentValue < targetValue) {
+                stat.textContent = Math.floor(currentValue) + (stat.textContent.includes('%') ? '%' : '');
+                requestAnimationFrame(animateValue);
+            } else {
+                stat.textContent = targetValue + (stat.textContent.includes('%') ? '%' : '');
+            }
+        };
+        
+        setTimeout(animateValue, Math.random() * 500);
+    });
+
+    // Auto-hide flash messages
+    const flashMessages = document.querySelectorAll('.flash-message');
+    flashMessages.forEach(function(message) {
+        setTimeout(function() {
+            message.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(function() {
+                message.remove();
+            }, 300);
+        }, 5000);
+    });
+});
+</script>
+{% endblock %}

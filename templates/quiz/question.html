@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Question {{ current }} of {{ total }} - Idexcel Quiz Platform{% endblock %}
+
+{% block content %}
+<div class="quiz-progress">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <span style="color: var(--gray-medium);">Question {{ current }} of {{ total }}</span>
+        <span id="timer" style="color: var(--primary-blue); font-weight: bold;">00:00</span>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ (current / total * 100)|round(1) }}%;"></div>
+    </div>
+</div>
+
+<div class="question-card">
+    <div class="question-text">
+        {{ question.question_text }}
+    </div>
+
+    {% if question.is_multi_select %}
+    <div class="multi-select-notice">
+        <span style="color: var(--primary-blue); font-weight: bold;">
+            ⚠️ Select {{ question.correct_answer|length }} answers for this question
+        </span>
+    </div>
+    {% else %}
+    <div class="single-select-notice">
+        <span style="color: var(--gray-medium);">
+            Select one answer
+        </span>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('quiz_answer') }}" id="answerForm">
+        <input type="hidden" name="is_multi_select" value="{{ question.is_multi_select|string }}">
+        
+        <ul class="options-list">
+            {% for letter in ['A', 'B', 'C', 'D', 'E'] %}
+                {% if question['option_' + letter.lower()] %}
+                <li class="option-item">
+                    <label class="option-label" for="option{{ letter }}">
+                        {% if question.is_multi_select %}
+                        <input
+                            type="checkbox"
+                            id="option{{ letter }}"
+                            name="answer"
+                            value="{{ letter }}"
+                            class="option-checkbox"
+                        >
+                        {% else %}
+                        <input
+                            type="radio"
+                            id="option{{ letter }}"
+                            name="answer"
+                            value="{{ letter }}"
+                            class="option-radio"
+                            required
+                        >
+                        {% endif %}
+                        <span><strong>{{ letter }}.</strong> {{ question['option_' + letter.lower()] }}</span>
+                    </label>
+                </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
+            <div>
+                {% if current > 1 %}
+                <span style="color: var(--gray-medium);">
+                    Cannot go back to previous questions
+                </span>
+                {% else %}
+                <span style="color: var(--gray-medium);">
+                    {% if question.is_multi_select %}
+                        Select {{ question.correct_answer|length }} answers to continue
+                    {% else %}
+                        Select an answer to continue
+                    {% endif %}
+                </span>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="nextButton" disabled>
+                {% if current < total %}
+                    Next Question →
+                {% else %}
+                    Finish Quiz
+                {% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="text-center mt-4">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary"
+       onclick="return confirm('Are you sure you want to leave the quiz? Your progress will be lost.')">
+        Exit Quiz
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Timer
+    let startTime = new Date();
+    const timerElement = document.getElementById('timer');
+
+    function updateTimer() {
+        const now = new Date();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        timerElement.textContent =
+            String(minutes).padStart(2, '0') + ':' +
+            String(seconds).padStart(2, '0');
+    }
+
+    setInterval(updateTimer, 1000);
+
+    // Handle multi-select and single-select logic
+    const isMultiSelect = document.querySelector('input[name="is_multi_select"]').value === 'True';
+    const nextButton = document.getElementById('nextButton');
+    
+    if (isMultiSelect) {
+        // Multi-select logic
+        const checkboxes = document.querySelectorAll('input[name="answer"]');
+        const requiredCount = {{ question.correct_answer|length if question.is_multi_select else 1 }};
+
+        checkboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const checkedCount = document.querySelectorAll('input[name="answer"]:checked').length;
+                nextButton.disabled = checkedCount !== requiredCount;
+
+                // Update styling
+                document.querySelectorAll('.option-label').forEach(function(label) {
+                    label.classList.remove('selected');
+                });
+                
+                document.querySelectorAll('input[name="answer"]:checked').forEach(function(checked) {
+                    checked.closest('.option-label').classList.add('selected');
+                });
+
+                // Prevent selecting more than required
+                if (checkedCount === requiredCount) {
+                    checkboxes.forEach(function(cb) {
+                        if (!cb.checked) {
+                            cb.disabled = true;
+                        }
+                    });
+                } else {
+                    checkboxes.forEach(function(cb) {
+                        cb.disabled = false;
+                    });
+                }
+            });
+        });
+    } else {
+        // Single-select logic
+        const radioButtons = document.querySelectorAll('input[name="answer"]');
+        
+        radioButtons.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                nextButton.disabled = false;
+
+                // Remove previous selections styling
+                document.querySelectorAll('.option-label').forEach(function(label) {
+                    label.classList.remove('selected');
+                });
+
+                // Add selected styling
+                this.closest('.option-label').classList.add('selected');
+            });
+        });
+    }
+
+    // Form submission handling
+    const form = document.getElementById('answerForm');
+    form.addEventListener('submit', function() {
+        nextButton.innerHTML = '<div class="loading"></div> ' +
+            ({{ current }} < {{ total }} ? 'Next...' : 'Finishing...');
+        nextButton.disabled = true;
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key >= '1' && e.key <= '5') {
+            const optionIndex = parseInt(e.key) - 1;
+            const options = document.querySelectorAll('input[name="answer"]');
+            if (options[optionIndex]) {
+                if (isMultiSelect) {
+                    options[optionIndex].checked = !options[optionIndex].checked;
+                } else {
+                    options[optionIndex].checked = true;
+                }
+                options[optionIndex].dispatchEvent(new Event('change'));
+            }
+        } else if (e.key === 'Enter' && !nextButton.disabled) {
+            form.submit();
+        }
+    });
+
+    // Auto-scroll to top
+    window.scrollTo(0, 0);
+});
+</script>
+
+<style>
+.option-label.selected {
+    border-color: var(--primary-blue);
+    background: rgba(52, 152, 219, 0.1) !important; /* Light blue background instead of dark */
+    color: var(--text-dark) !important; /* Ensure text remains readable */
+}
+
+.option-label {
+    transition: all 0.2s ease;
+}
+
+.option-radio, .option-checkbox {
+    accent-color: var(--primary-blue);
+}
+
+.multi-select-notice {
+    padding: 1rem;
+    background: rgba(74, 222, 128, 0.1);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: 8px;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.single-select-notice {
+    padding: 0.5rem 0;
+    text-align: center;
+    margin: 1rem 0;
+}
+</style>
+{% endblock %}

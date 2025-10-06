@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Create Admin User - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-create">
+    <div class="admin-header">
+        <h1>👨‍💼 Create Admin User</h1>
+        <p class="admin-subtitle">Add a new administrator to the platform</p>
+    </div>
+
+    <div class="create-actions">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+
+    <div class="create-form-container">
+        <div class="form-card">
+            <div class="card-header">
+                <h3>🔐 Admin Account Details</h3>
+                <p>Create a new administrator account with full platform access</p>
+            </div>
+
+            <div class="card-content">
+                <form method="POST" class="admin-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" required 
+                                   placeholder="Enter unique username" maxlength="50">
+                            <small class="form-help">Must be unique across all users</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" required 
+                                   placeholder="admin@example.com">
+                            <small class="form-help">Will be used for login and notifications</small>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="first_name">First Name</label>
+                            <input type="text" id="first_name" name="first_name" required 
+                                   placeholder="Enter first name" maxlength="50">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="last_name">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" required 
+                                   placeholder="Enter last name" maxlength="50">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required 
+                               placeholder="Enter secure password" minlength="6">
+                        <small class="form-help">Minimum 6 characters required</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" required 
+                               placeholder="Confirm the password">
+                        <div id="password-match" class="password-feedback"></div>
+                    </div>
+
+                    <div class="admin-privileges-info">
+                        <h4>🛡️ Administrator Privileges</h4>
+                        <ul class="privileges-list">
+                            <li>✅ Access to admin dashboard</li>
+                            <li>✅ View all user accounts and activities</li>
+                            <li>✅ Monitor quiz performance and analytics</li>
+                            <li>✅ Create additional admin accounts</li>
+                            <li>✅ Access detailed user reports</li>
+                            <li>✅ View platform statistics</li>
+                        </ul>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-large">
+                            👨‍💼 Create Admin Account
+                        </button>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-large">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-create {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 10px 20px 20px 20px;
+}
+
+.admin-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+.admin-header h1 {
+    color: var(--primary-color);
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+
+.admin-subtitle {
+    color: var(--gray-medium);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.create-actions {
+    margin-bottom: 20px;
+}
+
+.create-form-container {
+    display: flex;
+    justify-content: center;
+}
+
+.form-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    overflow: hidden;
+    width: 100%;
+    max-width: 600px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.card-header h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.3rem;
+}
+
+.card-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.card-content {
+    padding: 25px;
+}
+
+.admin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--gray-dark);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input {
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.form-help {
+    color: var(--gray-medium);
+    font-size: 0.8rem;
+}
+
+.password-feedback {
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
+.password-feedback.match {
+    color: var(--success-color);
+}
+
+.password-feedback.no-match {
+    color: var(--error-color);
+}
+
+.admin-privileges-info {
+    background: var(--background-light);
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.admin-privileges-info h4 {
+    margin: 0 0 15px 0;
+    color: var(--primary-color);
+}
+
+.privileges-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.privileges-list li {
+    color: var(--gray-dark);
+    font-size: 0.9rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.btn-large {
+    padding: 12px 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const passwordFeedback = document.getElementById('password-match');
+    
+    function checkPasswordMatch() {
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        if (confirmPassword === '') {
+            passwordFeedback.textContent = '';
+            passwordFeedback.className = 'password-feedback';
+            return;
+        }
+        
+        if (password === confirmPassword) {
+            passwordFeedback.textContent = '✓ Passwords match';
+            passwordFeedback.className = 'password-feedback match';
+        } else {
+            passwordFeedback.textContent = '✗ Passwords do not match';
+            passwordFeedback.className = 'password-feedback no-match';
+        }
+    }
+    
+    passwordInput.addEventListener('input', checkPasswordMatch);
+    confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+    
+    // Form validation
+    document.querySelector('.admin-form').addEventListener('submit', function(e) {
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Passwords do not match. Please check and try again.');
+            confirmPasswordInput.focus();
+        }
+        
+        if (password.length < 6) {
+            e.preventDefault();
+            alert('Password must be at least 6 characters long.');
+            passwordInput.focus();
+        }
+    });
+});
+</script>
+{% endblock %}
