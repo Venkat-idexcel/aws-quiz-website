@@ -6,12 +6,12 @@ class Config:
     """Base configuration"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-production-secret-key-change-this')
     
-    # Database Configuration - Local PostgreSQL
-    DB_HOST = os.getenv('DB_HOST', 'localhost')
-    DB_PORT = int(os.getenv('DB_PORT', 5432))  # Standard PostgreSQL port
-    DB_NAME = os.getenv('DB_NAME', 'aws_quiz_db')
+    # Database Configuration - AWS RDS PostgreSQL
+    DB_HOST = os.getenv('DB_HOST', 'los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com')
+    DB_PORT = int(os.getenv('DB_PORT', 3306))
+    DB_NAME = os.getenv('DB_NAME', 'postgres')
     DB_USER = os.getenv('DB_USER', 'postgres')
-    DB_PASSWORD = os.getenv('DB_PASSWORD', 'postgres')  # Default local password
+    DB_PASSWORD = os.getenv('DB_PASSWORD', 'poc2*&(SRWSjnjkn@#@#')
     
     # Redis Configuration
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
