@@ -74,6 +74,64 @@ A scalable, high-performance web-based quiz application for AWS certifications, 
 4. **View Results**: See detailed feedback and explanations
 5. **Track Progress**: Monitor your improvement over time
 
+### Production / Load Balancer Readiness
+
+New additions for stability:
+
+- `/healthz` – liveness probe (always 200 if process alive)
+- `/readyz` – readiness probe (503 if DB unreachable)
+- Structured logging to stdout (set `LOG_LEVEL`)
+- `wsgi.py` entrypoint for Gunicorn/Waitress
+- `flask create-indexes` command to add helpful DB indexes
+
+#### Gunicorn (Linux)
+```bash
+export FLASK_CONFIG=production
+gunicorn -w 4 -k gthread --threads 2 -b 0.0.0.0:8000 --timeout 90 --graceful-timeout 30 wsgi:app
+```
+
+#### Waitress (Windows)
+```powershell
+$env:FLASK_CONFIG='production'
+python -c "from waitress import serve; from wsgi import app; serve(app, host='0.0.0.0', port=8000)"
+```
+
+#### Health Checks (AWS ALB / Nginx / Kubernetes)
+- Path: `/readyz`
+- Success codes: 200
+- Interval: 30s (or 10s for faster failover)
+- Unhealthy threshold: 3
+
+Example Nginx upstream snippet:
+```
+location /healthz { return 200 'ok'; add_header Content-Type text/plain; }
+location /readyz { proxy_pass http://app_backend/readyz; }
+```
+
+#### Environment Variables (.env)
+See `.env.example` for tunables:
+- DB_POOL_MIN / DB_POOL_MAX
+- RATELIMIT_DEFAULT (e.g. `1000 per hour;200 per minute`)
+- LOG_LEVEL
+
+#### Index Optimization
+Run once after deploying:
+```bash
+flask create-indexes
+```
+
+#### Zero-Downtime Rolling Update (Gunicorn)
+1. Start new set of workers on a new port (e.g., 8001)
+2. Update load balancer target group to include new port
+3. Drain old workers and stop old process
+
+#### Common Issues
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| 503 on /readyz | DB unreachable | Verify security group / credentials |
+| Slow first request | Cold pool init | Warm by curling `/readyz` on deploy |
+| Connection refused after deploy | Old process died early | Use supervisor/systemd for process management |
+
 ### Quiz Options
 
 - **10 Questions**: Quick practice session

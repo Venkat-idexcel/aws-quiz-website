@@ -289,7 +289,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            background: white;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -306,17 +306,45 @@
         
         .loader-content {
             text-align: center;
-            color: white;
+            color: #374151;
         }
         
         .loader-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-top: 4px solid #3b82f6;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loader-logo {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            animation: counter-spin 1s linear infinite;
+        }
+        
+        .loader-logo img {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+        }
+        
+        @keyframes counter-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
         }
         
         @keyframes spin {
@@ -410,7 +438,11 @@
     <!-- Page Loader -->
     <div class="page-loader" id="pageLoader">
         <div class="loader-content">
-            <div class="loader-spinner"></div>
+            <div class="loader-spinner">
+                <div class="loader-logo">
+                    <img src="{{ url_for('static', filename='img/idexcel-AssessIQ.png') }}" alt="AssessIQ">
+                </div>
+            </div>
             <h3>Loading AssessIQ...</h3>
             <p>Preparing your learning experience</p>
         </div>
@@ -432,20 +464,16 @@
                             <span style="margin-right: 0.5rem;">👥</span>Users
                         </a>
                     {% else %}
-                        <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
-                        <a href="{{ url_for('quiz') }}">🎯 Take Quiz</a>
-                        <a href="{{ url_for('quiz_history') }}">📚 History</a>
+                        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('quiz') }}">Take Quiz</a>
+                        <a href="{{ url_for('quiz_history') }}">History</a>
                         <div class="dropdown">
                             <button class="dropdown-toggle" onclick="toggleDropdown()" aria-label="More options">
                                 ⋯
                             </button>
                             <div class="dropdown-menu" id="dropdownMenu">
-                                <a href="{{ url_for('user_badges') }}">
-                                    <span>🏅</span>Badges
-                                </a>
-                                <a href="{{ url_for('leaderboard') }}">
-                                    <span>🏆</span>Leaderboard
-                                </a>
+                                <a href="{{ url_for('user_badges') }}">Badges</a>
+                                <a href="{{ url_for('leaderboard') }}">Leaderboard</a>
                             </div>
                         </div>
                     {% endif %}
@@ -454,10 +482,8 @@
                     {% if session.get('is_admin', False) %}
                         <span style="background: linear-gradient(135deg, #ffd700, #ffed4a); color: #1a202c; padding: 0.25rem 0.75rem; border-radius: 15px; font-weight: 600; font-size: 0.8rem;">ADMIN</span>
                     {% endif %}
-                    <span style="font-weight: 500;">Welcome, {{ session.first_name }}! 👋</span>
-                    <a href="{{ url_for('logout') }}" class="btn btn-secondary">
-                        <span style="margin-right: 0.5rem;">🚪</span>Logout
-                    </a>
+                    <span style="font-weight: 500;">Welcome, {{ session.first_name }}!</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
                 </div>
             </div>
         </div>

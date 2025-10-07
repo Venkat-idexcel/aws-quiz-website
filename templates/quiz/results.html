@@ -80,19 +80,19 @@
 
 <div class="card text-center mb-4">
     {% if score_percentage >= 70 %}
-    <h3 style="color: var(--success); margin-bottom: 1rem;">🎉 Excellent Work!</h3>
+    <h3 style="color: var(--success); margin-bottom: 1rem;">Excellent Work</h3>
     <p style="color: var(--gray-light);">
         You scored {{ score_percentage }}%! You're well-prepared for the AWS Cloud Practitioner exam. 
         The passing score is typically around 70%.
     </p>
     {% elif score_percentage >= 50 %}
-    <h3 style="color: var(--warning); margin-bottom: 1rem;">🚀 Good Progress!</h3>
+    <h3 style="color: var(--warning); margin-bottom: 1rem;">Good Progress</h3>
     <p style="color: var(--gray-medium);">
         You scored {{ score_percentage }}%. You're on the right track! 
         Keep practicing to reach the 70% passing threshold.
     </p>
     {% else %}
-    <h3 style="color: var(--info); margin-bottom: 1rem;">📚 Keep Learning!</h3>
+    <h3 style="color: var(--info); margin-bottom: 1rem;">Keep Learning</h3>
     <p style="color: var(--gray-medium);">
         You scored {{ score_percentage }}%. Don't worry - practice makes perfect! 
         Review the questions below and take another quiz to improve.
@@ -125,9 +125,9 @@
             </div>
             
             <div class="question-text mb-3" style="color: var(--gray-medium); line-height: 1.6;">
-                {{ result.question.question_text }}
-                {% if result.question.is_multi_select %}
-                <br><em style="color: var(--primary-blue); font-size: 0.9rem;">📋 Multi-select question (select all that apply)</em>
+                {{ result.question.question }}
+                {% if result.question.is_multiselect %}
+                <br><em style="color: var(--primary-blue); font-size: 0.9rem;">Multi-select question (select all that apply)</em>
                 {% endif %}
             </div>
             
@@ -157,6 +157,13 @@
                     {% endif %}
                 {% endfor %}
             </div>
+
+            {% if result.question.explanation %}
+            <div class="explanation-section" style="margin-top: 1.5rem; padding: 1rem; background-color: #f8f9fa; border-radius: 5px; border: 1px solid #e9ecef;">
+                <h5 style="color: var(--primary-blue); font-weight: bold; margin-bottom: 0.5rem;">Explanation</h5>
+                <p style="color: #495057; font-size: 0.95rem; line-height: 1.6;">{{ result.question.explanation }}</p>
+            </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>

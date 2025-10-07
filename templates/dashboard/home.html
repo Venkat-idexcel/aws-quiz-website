@@ -32,7 +32,7 @@
 
 <div class="action-buttons">
     <a href="{{ url_for('quiz') }}" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
-        🚀 Take New Quiz
+    Take New Quiz
     </a>
     
     <a href="{{ url_for('quiz_history') }}" class="btn btn-secondary" style="padding: 1rem 2rem; font-size: 1.1rem;">
@@ -74,7 +74,7 @@
         </div>
         {% elif stats.average_score >= 50 %}
         <div style="color: var(--warning);">
-            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">🚀 Good Progress!</div>
+            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">Good Progress</div>
             <div style="font-size: 0.9rem;">Keep practicing to improve your score.</div>
         </div>
         {% else %}

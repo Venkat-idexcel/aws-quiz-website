@@ -12,75 +12,136 @@ import random
 import json
 import re
 from functools import wraps
-import os
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from authlib.integrations.flask_client import OAuth
 import requests
+from config import Config, DevelopmentConfig, ProductionConfig
+import os
+import logging
+import time
 
-app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this-in-production-very-long-and-secure-key-123456789'
-
-# OAuth Configuration
-oauth = OAuth(app)
-
-# OAuth Provider Settings - In production, these should come from environment variables
-OAUTH_CREDENTIALS = {
-    'google': {
-        'client_id': 'your-google-client-id.googleusercontent.com',
-        'client_secret': 'your-google-client-secret',
-        'server_metadata_url': 'https://accounts.google.com/.well-known/openid-configuration',
-        'client_kwargs': {
-            'scope': 'openid email profile'
-        }
-    },
-    'github': {
-        'client_id': 'your-github-client-id',
-        'client_secret': 'your-github-client-secret',
-        'server_metadata_url': 'https://api.github.com/.well-known/openid_configuration',
-        'authorize_url': 'https://github.com/login/oauth/authorize',
-        'access_token_url': 'https://github.com/login/oauth/access_token',
-        'client_kwargs': {
-            'scope': 'user:email'
-        }
-    },
-    'microsoft': {
-        'client_id': 'your-microsoft-client-id',
-        'client_secret': 'your-microsoft-client-secret',
-        'server_metadata_url': 'https://login.microsoftonline.com/common/v2.0/.well-known/openid_configuration',
-        'client_kwargs': {
-            'scope': 'openid email profile'
-        }
-    }
+# Create config dictionary for the app
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
 }
 
-# Register OAuth providers
-google = oauth.register(
-    name='google',
-    **OAUTH_CREDENTIALS['google']
+# --- Logging Configuration (stdout friendly for containers / LB) ---
+logging.basicConfig(
+    level=os.getenv('LOG_LEVEL', 'INFO').upper(),
+    format='%(asctime)s %(levelname)s %(message)s'
 )
+logger = logging.getLogger("quiz_app")
 
-github = oauth.register(
-    name='github',
-    **OAUTH_CREDENTIALS['github']
-)
-
-microsoft = oauth.register(
-    name='microsoft',
-    **OAUTH_CREDENTIALS['microsoft']
-)
-
-# Configure session settings for better cookie persistence
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
-# Initialize rate limiter with in-memory storage (no Redis required)
+# Initialize extensions (must be before create_app)
+oauth = OAuth()
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["1000 per hour", "100 per minute"]
 )
-limiter.init_app(app)
+
+# Simple request timing middleware
+from flask import Response
+
+def register_request_timing(app):
+    @app.before_request
+    def _start_timer():
+        g._req_start = time.perf_counter()
+
+    @app.after_request
+    def _log_request(resp: Response):
+        try:
+            duration = (time.perf_counter() - getattr(g, '_req_start', time.perf_counter())) * 1000
+            logger.info(
+                "request", extra={
+                    'path': request.path,
+                    'method': request.method,
+                    'status': resp.status_code,
+                    'duration_ms': round(duration, 2),
+                    'remote_ip': request.remote_addr
+                }
+            )
+        except Exception:
+            pass
+        return resp
+
+
+def create_app(config_name='production'):
+    app = Flask(__name__)
+    app.config.from_object(config[config_name])
+
+    # Initialize extensions with app
+    oauth.init_app(app)
+    limiter.init_app(app)
+
+    # Register OAuth providers from config
+    oauth.register(
+        name='google',
+        client_id=app.config.get('GOOGLE_CLIENT_ID'),
+        client_secret=app.config.get('GOOGLE_CLIENT_SECRET'),
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_kwargs={'scope': 'openid email profile'}
+    )
+    oauth.register(
+        name='github',
+        client_id=app.config.get('GITHUB_CLIENT_ID'),
+        client_secret=app.config.get('GITHUB_CLIENT_SECRET'),
+        authorize_url='https://github.com/login/oauth/authorize',
+        access_token_url='https://github.com/login/oauth/access_token',
+        client_kwargs={'scope': 'user:email'}
+    )
+    oauth.register(
+        name='microsoft',
+        client_id=app.config.get('MICROSOFT_CLIENT_ID'),
+        client_secret=app.config.get('MICROSOFT_CLIENT_SECRET'),
+        server_metadata_url='https://login.microsoftonline.com/common/v2.0/.well-known/openid_configuration',
+        client_kwargs={'scope': 'openid email profile'}
+    )
+
+    # Register CLI commands
+    @app.cli.command("init-db")
+    def init_db_command():
+        """Creates the database tables."""
+        from app import init_database
+        init_database()
+        print("Initialized the database.")
+
+    @app.cli.command("create-indexes")
+    def create_indexes_command():
+        """Create helpful database indexes (idempotent)."""
+        conn = get_db_connection()
+        if not conn:
+            print("Cannot obtain DB connection")
+            return
+        try:
+            cur = conn.cursor()
+            statements = [
+                # Users
+                "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
+                "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",
+                # Quiz sessions
+                "CREATE INDEX IF NOT EXISTS idx_quiz_sessions_user ON quiz_sessions(user_id)",
+                "CREATE INDEX IF NOT EXISTS idx_quiz_sessions_completed ON quiz_sessions(completed_at)",
+                # Activity
+                "CREATE INDEX IF NOT EXISTS idx_user_activity_user ON user_activities(user_id)",
+                # Badges link
+                "CREATE INDEX IF NOT EXISTS idx_user_badges_user ON user_badges(user_id)"
+            ]
+            for stmt in statements:
+                try:
+                    cur.execute(stmt)
+                except Exception as e:
+                    print(f"Index statement failed ({stmt}): {e}")
+            conn.commit()
+            print("✅ Index creation completed")
+        finally:
+            return_db_connection(conn)
+
+    return app
+
+app = create_app(os.getenv('FLASK_ENV', 'default'))
 
 # Email Configuration
 # To use Gmail: 
@@ -88,123 +149,50 @@ limiter.init_app(app)
 # 2. Generate App Password: Google Account → Security → App passwords
 # 3. Replace the values below with your Gmail credentials
 
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'your-gmail@gmail.com'  # Replace with your Gmail address
-EMAIL_HOST_PASSWORD = 'your-16-char-app-password'  # Replace with Gmail App Password
-EMAIL_USE_TLS = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
+# EMAIL_HOST = 'smtp.gmail.com' # Now handled by config
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = 'your-gmail@gmail.com'  # Replace with your Gmail address
+# EMAIL_HOST_PASSWORD = 'your-16-char-app-password'  # Replace with Gmail App Password
+# EMAIL_USE_TLS = True
+# app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 
 # Database configuration (matching your existing setup)
-DB_CONFIG = {
-    'host': 'localhost',
-    'port': 5480,
-    'database': 'cretificate_quiz_db',
-    'user': 'psql_master',
-    'password': 'LaS%J`ea&>7V2CR8C+P`'
-}
-
-# Database Connection Pool
-db_pool = None
-
-def init_db_pool():
-    """Initialize database connection pool with timeout"""
-    global db_pool
-    try:
-        # Use shorter timeout for startup
-        db_pool = psycopg2.pool.ThreadedConnectionPool(
-            minconn=1,  # Start with fewer connections
-            maxconn=10,  # Reduce max connections for startup
-            host=DB_CONFIG['host'],
-            port=DB_CONFIG['port'],
-            database=DB_CONFIG['database'],
-            user=DB_CONFIG['user'],
-            password=DB_CONFIG['password'],
-            connect_timeout=5  # 5 second timeout
-        )
-        print("✅ Database connection pool initialized successfully")
-        return True
-    except Exception as e:
-        print(f"❌ Database pool initialization error: {e}")
-        print("ℹ️ Application will continue with fallback connections")
-        return False
+# DB_CONFIG = { # Now handled by config
+#     'host': 'localhost',
+#     'port': 5480,
+#     'database': 'cretificate_quiz_db',
+#     'user': 'psql_master',
+#     'password': 'LaS%J`ea&>7V2CR8C+P`'
+# }
 
 def get_db_connection():
     """Get database connection from pool with error handling"""
-    if db_pool is None:
-        # Fallback to direct connection if pool failed
-        try:
-            conn = psycopg2.connect(**DB_CONFIG)
-            return conn
-        except Exception as e:
-            print(f"Database connection error: {e}")
-            return None
-    
+    if 'db_conn' in g and g.db_conn and not g.db_conn.closed:
+        return g.db_conn
+
     try:
-        conn = db_pool.getconn()
-        if conn:
-            return conn
+        # Use app context to get config
+        conn = psycopg2.connect(
+            host=app.config['DB_HOST'],
+            port=app.config['DB_PORT'],
+            database=app.config['DB_NAME'],
+            user=app.config['DB_USER'],
+            password=app.config['DB_PASSWORD'],
+            connect_timeout=5
+        )
+        g.db_conn = conn
+        return conn
     except Exception as e:
-        print(f"Database pool connection error: {e}")
-        # Fallback to direct connection
-        try:
-            conn = psycopg2.connect(**DB_CONFIG)
-            return conn
-        except Exception as e2:
-            print(f"Fallback database connection error: {e2}")
-            return None
+        logger.error(f"Database connection error: {e}")
+        # Optionally, flash a message or handle it
+        # flash('Database connection is currently unavailable. Please try again later.', 'error')
+        return None
 
 def return_db_connection(conn):
     """Return connection to pool or close if not using pool"""
-    if conn:
-        if db_pool:
-            try:
-                db_pool.putconn(conn)
-            except Exception as e:
-                print(f"Error returning connection to pool: {e}")
-                conn.close()
-        else:
-            conn.close()
-
-# Simple in-memory cache decorator (no Redis required)
-def cached(timeout=300, key_prefix=''):
-    """Simple in-memory cache decorator"""
-    cache_storage = {}
-    
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            # Generate cache key
-            cache_key = f"{key_prefix}:{f.__name__}:{hash(str(args) + str(kwargs))}"
-            
-            # Check in-memory cache
-            if cache_key in cache_storage:
-                cached_data, cached_time = cache_storage[cache_key]
-                if datetime.now() - cached_time < timedelta(seconds=timeout):
-                    return cached_data
-                else:
-                    # Remove expired cache
-                    del cache_storage[cache_key]
-            
-            # Execute function
-            result = f(*args, **kwargs)
-            
-            # Store result in memory cache
-            cache_storage[cache_key] = (result, datetime.now())
-            
-            return result
-        return wrapper
-    return decorator
-
-def close_db_pool():
-    """Close database connection pool"""
-    global db_pool
-    if db_pool:
-        try:
-            db_pool.closeall()
-            print("✅ Database connection pool closed")
-        except Exception as e:
-            print(f"Error closing database pool: {e}")
+    # This function is simplified as we are not using a pool in this version.
+    if conn and not conn.closed:
+        conn.close()
 
 # Application teardown
 @app.teardown_appcontext
@@ -476,7 +464,6 @@ def log_user_activity(user_id, activity_type, description, ip_address=None, user
     finally:
         conn.close()
 
-@cached(timeout=600, key_prefix='user_perf')
 def get_user_performance_summary(user_id):
     """Get cached user performance summary"""
     conn = get_db_connection()
@@ -619,7 +606,7 @@ def send_reset_email(email, reset_token):
     try:
         # Create message
         msg = MIMEMultipart()
-        msg['From'] = EMAIL_HOST_USER
+        msg['From'] = app.config['EMAIL_HOST_USER']
         msg['To'] = email
         msg['Subject'] = 'Password Reset - Idexcel Quiz Platform'
         
@@ -646,12 +633,12 @@ def send_reset_email(email, reset_token):
         msg.attach(MIMEText(body, 'plain'))
         
         # Connect to SMTP server and send email
-        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
-        if EMAIL_USE_TLS:
+        server = smtplib.SMTP(app.config['EMAIL_HOST'], app.config['EMAIL_PORT'])
+        if app.config['EMAIL_USE_TLS']:
             server.starttls()
-        server.login(EMAIL_HOST_USER, EMAIL_HOST_PASSWORD)
+        server.login(app.config['EMAIL_HOST_USER'], app.config['EMAIL_HOST_PASSWORD'])
         text = msg.as_string()
-        server.sendmail(EMAIL_HOST_USER, email, text)
+        server.sendmail(app.config['EMAIL_HOST_USER'], email, text)
         server.quit()
         
         print(f"Password reset email sent to {email}")
@@ -976,9 +963,9 @@ def oauth_login(provider):
         print(f"📍 Redirect URI for {provider}: {redirect_uri}")
         
         # For demo purposes, if using placeholder credentials, show success message
-        if OAUTH_CREDENTIALS[provider]['client_id'].startswith('your-'):
-            flash(f'🎉 OAuth button works! {provider.title()} OAuth initiated successfully. In production, you would be redirected to {provider.title()} for authentication.', 'success')
-            return redirect(url_for('login'))
+        if app.config.get(f'{provider.upper()}_CLIENT_ID', '').startswith('your-'):
+             flash(f'🎉 OAuth button works! {provider.title()} OAuth initiated successfully. In production, you would be redirected to {provider.title()} for authentication.', 'success')
+             return redirect(url_for('login'))
         
         return client.authorize_redirect(redirect_uri)
         
@@ -999,15 +986,28 @@ def oauth_callback(provider):
         if not client:
             flash(f'{provider.title()} OAuth is not configured.', 'error')
             return redirect(url_for('login'))
-        
-        # Get access token
+
+        # For demo purposes, if using placeholder credentials, show success message
+        if app.config.get(f'{provider.upper()}_CLIENT_ID', '').startswith('your-'):
+             flash(f'🎉 OAuth button works! {provider.title()} OAuth initiated successfully. In production, you would be redirected to {provider.title()} for authentication.', 'success')
+             return redirect(url_for('login'))
+
         token = client.authorize_access_token()
-        
-        # Get user info from OAuth provider
-        user_info = get_oauth_user_info(provider, token)
+        user_info = token.get('userinfo')
         if not user_info:
-            flash(f'Failed to get user information from {provider.title()}.', 'error')
-            return redirect(url_for('login'))
+             if provider == 'github':
+                 # GitHub doesn't use OIDC userinfo, fetch user from API
+                 resp = client.get('user', token=token)
+                 profile = resp.json()
+                 user_info = {
+                     'sub': profile['id'],
+                     'name': profile.get('name', profile.get('login')),
+                     'email': profile.get('email'),
+                     'picture': profile.get('avatar_url')
+                 }
+             else:
+                 flash(f'Failed to fetch user information from {provider.title()}.', 'error')
+                 return redirect(url_for('login'))
         
         # Create or update user
         user = create_or_update_oauth_user(user_info, provider)
@@ -1425,7 +1425,7 @@ def take_quiz_direct(quiz_type):
     num_questions = 20
     
     # Validate quiz type and handle unavailable options
-    if quiz_type not in ['aws-cloud-practitioner']:
+    if quiz_type not in ['aws-cloud-practitioner', 'aws-data-engineer']:
         flash(f'Quiz type {quiz_type} is not available yet. Please check back later!', 'error')
         return redirect(url_for('quiz'))
     
@@ -1469,26 +1469,44 @@ def take_quiz_direct(quiz_type):
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
         # Get questions for the quiz type
-        cursor.execute("""
-            SELECT id, question_text, option_a, option_b, option_c, option_d, option_e, 
-                   correct_answer, is_multi_select
-            FROM quiz_questions 
-            WHERE quiz_type = %s 
-            ORDER BY RANDOM() 
-            LIMIT %s
-        """, (quiz_type, num_questions))
+        query = ""
+        if quiz_type == 'aws-cloud-practitioner':
+            query = """
+                SELECT id, question, option_a, option_b, option_c, option_d, option_e, 
+                       correct_answer, explanation, is_multiselect
+                FROM aws_questions 
+                WHERE category IS NULL OR category = '' OR category NOT ILIKE 'AWS Data Engineer'
+                ORDER BY RANDOM() 
+                LIMIT %s
+            """
+        elif quiz_type == 'aws-data-engineer':
+            query = """
+                SELECT id, question, option_a, option_b, option_c, option_d, option_e, 
+                       correct_answer, explanation, is_multiselect
+                FROM aws_questions 
+                WHERE category ILIKE 'AWS Data Engineer'
+                ORDER BY RANDOM() 
+                LIMIT %s
+            """
+
+        if query:
+            print(f"DEBUG: Executing query for {quiz_type}: {query}")
+        cursor.execute(query, (num_questions,))
         
         questions = cursor.fetchall()
+        print(f"DEBUG: Found {len(questions) if questions else 0} questions for {quiz_type}")
         
         if not questions:
             flash('No questions available for this quiz type. Please try again later.', 'error')
             return redirect(url_for('quiz'))
         
         # Store quiz session data
-        session['quiz_questions'] = [q['id'] for q in questions]
-        session['current_question'] = 0
+        session['quiz_question_ids'] = [q['id'] for q in questions]
+        session['quiz_questions'] = [dict(q) for q in questions]
+        session['quiz_current'] = 0
         session['quiz_answers'] = {}
         session['quiz_start_time'] = datetime.now().isoformat()
+        session['quiz_total'] = len(questions)
         
         return render_template('quiz/question.html', 
                              question=questions[0], 
@@ -1509,13 +1527,17 @@ def take_quiz_direct(quiz_type):
 def take_quiz():
     """Take quiz with selected parameters"""
     if 'user_id' not in session:
+        print("DEBUG: No user_id in session for take_quiz")
         return redirect(url_for('login'))
     
     num_questions = int(request.form.get('num_questions', 20))
     quiz_type = request.form.get('quiz_type', 'aws-cloud-practitioner')
     
+    print(f"DEBUG: take_quiz called with quiz_type={quiz_type}, num_questions={num_questions}")
+    
     # Validate quiz type and handle unavailable options
-    if quiz_type not in ['aws-cloud-practitioner']:
+    if quiz_type not in ['aws-cloud-practitioner', 'aws-data-engineer']:
+        print(f"DEBUG: Invalid quiz type: {quiz_type}")
         flash(f'Quiz type {quiz_type} is not available yet. Please check back later!', 'error')
         return redirect(url_for('quiz'))
     
@@ -1875,45 +1897,60 @@ def take_quiz():
         # Store minimal quiz session data
         session['quiz_session_id'] = 1
         session['quiz_questions'] = questions
+        session['quiz_question_ids'] = [q['id'] for q in questions]
         session['quiz_current'] = 0
         session['quiz_answers'] = {}
         session['quiz_start_time'] = datetime.now().isoformat()
         session['quiz_type'] = quiz_type
+        session['quiz_total'] = len(questions)
         
+        print(f"DEBUG: Quiz initialized successfully, redirecting to quiz_question")
         return redirect(url_for('quiz_question'))
     
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
         # Get random questions based on quiz type
-        # For now, all questions are AWS Cloud Practitioner questions
-        # In the future, we can filter by category/quiz_type when we add more question types
+        query = ""
         if quiz_type == 'aws-cloud-practitioner':
-            cur.execute("""
-                SELECT id, question_text, option_a, option_b, option_c, option_d, option_e, correct_answer,
+            query = """
+                SELECT id, question, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation,
                        COALESCE(is_multiselect, CASE WHEN LENGTH(TRIM(correct_answer)) > 1 THEN true ELSE false END) as is_multiselect
                 FROM aws_questions 
+                WHERE category IS NULL OR category = '' OR category NOT ILIKE 'AWS Data Engineer'
                 ORDER BY RANDOM() 
                 LIMIT %s
-            """, (num_questions,))
-        else:
-            # Future quiz types would be handled here
-            flash(f'Quiz type {quiz_type} is not implemented yet.', 'error')
-            return redirect(url_for('quiz'))
+            """
+        elif quiz_type == 'aws-data-engineer':
+            query = """
+                SELECT id, question, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation,
+                       COALESCE(is_multiselect, CASE WHEN LENGTH(TRIM(correct_answer)) > 1 THEN true ELSE false END) as is_multiselect
+                FROM aws_questions 
+                WHERE category ILIKE 'AWS Data Engineer'
+                ORDER BY RANDOM() 
+                LIMIT %s
+            """
         
+        if not query:
+             flash(f'Quiz type {quiz_type} is not implemented yet.', 'error')
+             return redirect(url_for('quiz'))
+
+        print(f"DEBUG: Executing query for {quiz_type}: {query}")
+        cur.execute(query, (num_questions,))
         questions = cur.fetchall()
         
-        print(f"DEBUG: Fetched {len(questions) if questions else 0} questions from database")
+        print(f"DEBUG: Fetched {len(questions) if questions else 0} questions from database for {quiz_type}")
         
         if not questions:
-            flash('No questions available.', 'error')
+            print(f"DEBUG: No questions found for quiz type: {quiz_type}")
+            flash('No questions available for this quiz type.', 'error')
             return redirect(url_for('quiz'))
         
         # Create quiz session with quiz type information
         quiz_data = {
             'questions': [dict(q) for q in questions],
             'quiz_type': quiz_type,
-            'quiz_type_display': 'AWS Cloud Practitioner' if quiz_type == 'aws-cloud-practitioner' else quiz_type
+            'quiz_type_display': 'AWS Cloud Practitioner' if quiz_type == 'aws-cloud-practitioner' else 'AWS Data Engineer'
         }
         
         cur.execute("""
@@ -1932,7 +1969,8 @@ def take_quiz():
         for i, q in enumerate(questions):
             try:
                 # Clean the text content to remove PDF stamps
-                question_text = clean_text(str(q['question_text'] or ''))
+                # Handle both 'question' and 'question_text' column names
+                question_text = clean_text(str(q.get('question') or q.get('question_text') or ''))
                 option_a = clean_text(str(q['option_a'] or ''))
                 option_b = clean_text(str(q['option_b'] or ''))
                 option_c = clean_text(str(q['option_c'] or ''))
@@ -1942,12 +1980,12 @@ def take_quiz():
                 # Store only essential data to reduce session size
                 question_data = {
                     'id': int(q['id']),
-                    'question_text': question_text[:300],  # Reduced length 
-                    'option_a': option_a[:100],  # Reduced length
-                    'option_b': option_b[:100],
-                    'option_c': option_c[:100], 
-                    'option_d': option_d[:100],
-                    'option_e': option_e[:100],
+                    'question': question_text,  # Use 'question' as the key
+                    'option_a': option_a,
+                    'option_b': option_b,
+                    'option_c': option_c, 
+                    'option_d': option_d,
+                    'option_e': option_e,
                     'correct_answer': str(q['correct_answer'] or '').strip(),
                     'is_multi_select': bool(q.get('is_multiselect', len(str(q['correct_answer'] or '').strip()) > 1))
                 }
@@ -1957,17 +1995,17 @@ def take_quiz():
                 print(f"DEBUG: Error processing question {i+1}: {e}")
                 continue
         
-        # Store minimal quiz session data - only IDs and essential info
+        # Store quiz session data
         session['quiz_session_id'] = int(session_id)
-        # Store only question IDs to reduce session size
+        session['quiz_questions'] = quiz_questions  # Store the processed questions
         session['quiz_question_ids'] = [int(q['id']) for q in questions]
-        session['quiz_total'] = len(questions) 
+        session['quiz_total'] = len(quiz_questions) 
         session['quiz_current'] = 0
         session['quiz_answers'] = {}
         session['quiz_start_time'] = datetime.now().isoformat()
         session['quiz_type'] = quiz_type
         
-        print(f"DEBUG: Stored {len(questions)} question IDs in session for quiz type: {quiz_type}")
+        print(f"DEBUG: Stored {len(quiz_questions)} questions in session for quiz type: {quiz_type}")
         
         return redirect(url_for('quiz_question'))
         
@@ -1979,17 +2017,48 @@ def take_quiz():
         if conn:
             conn.close()
 
-@app.route('/quiz/question')
+@app.route('/quiz/answer', methods=['POST'])
+@limiter.limit("60 per minute")
+def quiz_answer():
+    """Handle quiz answer submission and redirect to next question"""
+    if 'user_id' not in session or 'quiz_questions' not in session:
+        return redirect(url_for('quiz'))
+    
+    # Get the answer from the form
+    answers = session.get('quiz_answers', {})
+    current_question_index = session.get('quiz_current', 0)
+    questions = session['quiz_questions']
+    
+    if current_question_index < len(questions):
+        question_data = questions[current_question_index]
+        question_id = str(question_data['id'])
+        
+        # Handle both single and multiple answers
+        user_answer = request.form.getlist('answer')
+        if user_answer:
+            answers[question_id] = ''.join(sorted(user_answer))
+        
+        session['quiz_answers'] = answers
+        session['quiz_current'] = current_question_index + 1
+    
+    return redirect(url_for('quiz_question'))
+
+@app.route('/quiz/question', methods=['GET', 'POST'])
+@limiter.limit("60 per minute")  # Allow frequent answers
 def quiz_question():
     """Display current quiz question"""
-    if 'user_id' not in session or 'quiz_session_id' not in session:
-        print("DEBUG: No user_id or quiz_session_id in session, redirecting to quiz")
+    if 'user_id' not in session:
+        print("DEBUG: No user_id in session, redirecting to quiz")
+        return redirect(url_for('quiz'))
+        
+    if 'quiz_questions' not in session:
+        print("DEBUG: No quiz_questions in session, redirecting to quiz")
+        print(f"DEBUG: Session keys: {list(session.keys())}")
         return redirect(url_for('quiz'))
     
     current = session.get('quiz_current', 0)
-    question_ids = session.get('quiz_question_ids', [])
-    questions = session.get('quiz_questions', [])  # Fallback for sample questions
-    total_questions = session.get('quiz_total', len(questions))
+    questions = session.get('quiz_questions', [])
+    total_questions = len(questions)
     
     print(f"DEBUG: Current question: {current}, Total questions: {total_questions}")
     print(f"DEBUG: Session quiz_current: {session.get('quiz_current')}")
@@ -1998,102 +2067,20 @@ def quiz_question():
         print(f"DEBUG: Redirecting to results - current ({current}) >= total ({total_questions})")
         return redirect(url_for('quiz_results'))
     
-    # If we have question_ids (database mode), retrieve from database
-    if question_ids:
-        try:
-            conn = get_db_connection()
-            if not conn:
-                flash('Database connection lost. Please try again.', 'error')
-                return redirect(url_for('quiz'))
-            
-            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            question_id = question_ids[current]
-            
-            # Get the specific question
-            cur.execute("""
-                SELECT id, question_text, option_a, option_b, option_c, option_d, option_e, correct_answer,
-                       COALESCE(is_multiselect, CASE WHEN LENGTH(TRIM(correct_answer)) > 1 THEN true ELSE false END) as is_multiselect
-                FROM aws_questions 
-                WHERE id = %s
-            """, (question_id,))
-            
-            question_data = cur.fetchone()
-            conn.close()
-            
-            if not question_data:
-                flash('Question not found. Please restart the quiz.', 'error')
-                return redirect(url_for('quiz'))
-            
-            # Clean the text content
-            question = {
-                'id': int(question_data['id']),
-                'question_text': clean_text(str(question_data['question_text'] or '')),
-                'option_a': clean_text(str(question_data['option_a'] or '')),
-                'option_b': clean_text(str(question_data['option_b'] or '')),
-                'option_c': clean_text(str(question_data['option_c'] or '')),
-                'option_d': clean_text(str(question_data['option_d'] or '')),
-                'option_e': clean_text(str(question_data['option_e'] or '')),
-                'correct_answer': str(question_data['correct_answer'] or '').strip(),
-                'is_multi_select': bool(question_data['is_multiselect'])
-            }
-            
-        except Exception as e:
-            print(f"DEBUG: Error retrieving question: {e}")
-            flash('Error retrieving question. Please try again.', 'error')
-            return redirect(url_for('quiz'))
-    else:
-        # Fallback to sample questions stored in session
-        if current >= len(questions):
-            return redirect(url_for('quiz_results'))
+    # Get the current question
+    if current < len(questions):
         question = questions[current]
-    
-    print(f"DEBUG: Displaying question {current + 1} of {total_questions}")
-    
-    return render_template('quiz/question.html', 
-                         question=question, 
-                         current=current + 1, 
-                         total=total_questions)
-
-@app.route('/quiz/answer', methods=['POST'])
-def quiz_answer():
-    """Process quiz answer"""
-    if 'user_id' not in session or 'quiz_session_id' not in session:
-        print("DEBUG: No user_id or quiz_session_id in session for answer processing")
-        return redirect(url_for('quiz'))
-    
-    current = session.get('quiz_current', 0)
-    questions = session.get('quiz_questions', [])  # Fallback for sample questions
-    total_questions = session.get('quiz_total', len(questions))
-    is_multi_select = request.form.get('is_multi_select') == 'True'
-    
-    print(f"DEBUG: Processing answer for question {current + 1}")
-    print(f"DEBUG: Is multi-select: {is_multi_select}")
-    print(f"DEBUG: Form data: {dict(request.form)}")
-    
-    if current < total_questions:
-        # Handle both single and multiple answers
-        if is_multi_select:
-            user_answer = request.form.getlist('answer')  # Get list of selected answers
-            user_answer = ''.join(sorted(user_answer))    # Join and sort (e.g., ['A','C'] becomes 'AC')
-        else:
-            user_answer = request.form.get('answer')      # Get single answer
+        print(f"DEBUG: Retrieved question {current + 1}: {question.get('question', 'No question text')[:50]}...")
         
-        print(f"DEBUG: User answer: {user_answer}")
+        print(f"DEBUG: Displaying question {current + 1} of {total_questions}")
         
-        # Store answer using string key to avoid serialization issues
-        session['quiz_answers'][str(current)] = str(user_answer) if user_answer else ''
-        session['quiz_current'] = current + 1
-        session.modified = True
-        
-        print(f"DEBUG: Updated quiz_current to: {session['quiz_current']}")
-        print(f"DEBUG: Total answers stored: {len(session.get('quiz_answers', {}))}")
-    
-    if session['quiz_current'] >= total_questions:
-        print(f"DEBUG: Quiz completed, redirecting to results")
-        return redirect(url_for('quiz_results'))
+        return render_template('quiz/question.html', 
+                             question=question, 
+                             current=current + 1, 
+                             total=total_questions)
     else:
-        print(f"DEBUG: Moving to next question")
-        return redirect(url_for('quiz_question'))
+        print("DEBUG: Current index out of range, redirecting to results")
+        return redirect(url_for('quiz_results'))
 
 @app.route('/quiz/results')
 def quiz_results():
@@ -2109,156 +2096,101 @@ def quiz_results():
     time_taken = int((end_time - start_time).total_seconds() / 60)
     
     # Calculate score
-    correct_count = 0
+    correct_answers = 0
     results = []
     
-    conn = get_db_connection()
+    questions = session.get('quiz_questions', [])
+    answers = session.get('quiz_answers', {})
     
-    # If we have question_ids, retrieve from database
-    if question_ids:
-        try:
-            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            # Get all questions used in this quiz
-            cur.execute("""
-                SELECT id, question_text, option_a, option_b, option_c, option_d, option_e, correct_answer,
-                       COALESCE(is_multiselect, CASE WHEN LENGTH(TRIM(correct_answer)) > 1 THEN true ELSE false END) as is_multiselect
-                FROM aws_questions 
-                WHERE id = ANY(%s)
-                ORDER BY array_position(%s, id)
-            """, (question_ids, question_ids))
-            
-            questions_data = cur.fetchall()
-            
-            # Convert to list of dicts with cleaned text
-            questions = []
-            for q in questions_data:
-                question = {
-                    'id': int(q['id']),
-                    'question_text': clean_text(str(q['question_text'] or '')),
-                    'option_a': clean_text(str(q['option_a'] or '')),
-                    'option_b': clean_text(str(q['option_b'] or '')),
-                    'option_c': clean_text(str(q['option_c'] or '')),
-                    'option_d': clean_text(str(q['option_d'] or '')),
-                    'option_e': clean_text(str(q['option_e'] or '')),
-                    'correct_answer': str(q['correct_answer'] or '').strip(),
-                    'is_multi_select': bool(q['is_multiselect'])
-                }
-                questions.append(question)
-                
-        except Exception as e:
-            print(f"DEBUG: Error retrieving questions for results: {e}")
-            flash('Error retrieving quiz results.', 'error')
-            return redirect(url_for('quiz'))
-    
-    for i, question in enumerate(questions):
-        user_answer = answers.get(str(i))
-        correct_answer = question['correct_answer']
-        is_correct = user_answer == correct_answer
+    for i, q in enumerate(questions):
+        question_id = str(q['id'])
+        user_answer = answers.get(question_id)
         
-        if is_correct:
-            correct_count += 1
+        # Normalize correct answer by sorting characters
+        correct_answer = "".join(sorted(q['correct_answer'].strip().upper()))
+        
+        is_correct = False
+        if user_answer:
+            # Also normalize user answer
+            user_answer_sorted = "".join(sorted(user_answer.strip().upper()))
+            if user_answer_sorted == correct_answer:
+                is_correct = True
+                correct_answers += 1
         
         results.append({
-            'question': question,
+            'question_num': i + 1,
+            'question': q,
             'user_answer': user_answer,
             'correct_answer': correct_answer,
             'is_correct': is_correct
         })
-        
-        # Store individual answer in database
-        if conn:
-            try:
-                cur = conn.cursor()
-                cur.execute("""
-                    INSERT INTO quiz_answers (session_id, question_id, user_answer, correct_answer, is_correct)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (session['quiz_session_id'], question['id'], user_answer, correct_answer, is_correct))
-            except Exception as e:
-                print(f"Error storing answer: {e}")
     
-    # Update quiz session
-    score_percentage = (correct_count / len(questions)) * 100 if questions else 0
+    total_questions = len(questions)
+    score_percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
     
+    # Save results to database
+    conn = get_db_connection()
     if conn:
         try:
             cur = conn.cursor()
+            
+            # Update quiz session
             cur.execute("""
                 UPDATE quiz_sessions 
                 SET completed_at = %s, correct_answers = %s, score_percentage = %s, time_taken_minutes = %s
                 WHERE id = %s
-            """, (end_time, correct_count, score_percentage, time_taken, session['quiz_session_id']))
+            """, (end_time, correct_answers, score_percentage, time_taken, session['quiz_session_id']))
+            
+            # Save detailed answers
+            answer_records = []
+            for res in results:
+                answer_records.append((
+                    session['quiz_session_id'],
+                    res['question']['id'],
+                    res['user_answer'],
+                    res['correct_answer'],
+                    res['is_correct']
+                ))
+            
+            cur.executemany("""
+                INSERT INTO quiz_answers (session_id, question_id, user_answer, correct_answer, is_correct)
+                VALUES (%s, %s, %s, %s, %s)
+            """, answer_records)
+            
             conn.commit()
             
-            # Log activity and update performance summary
-            log_user_activity(session['user_id'], 'QUIZ_COMPLETED', 
-                            f'Completed quiz with {correct_count}/{len(questions)} correct answers ({score_percentage:.1f}%)',
-                            request.remote_addr, request.headers.get('User-Agent'))
+            # Update performance summary in the background (or could be a task queue)
             update_user_performance_summary(session['user_id'])
             
-            # Store newly awarded badges placeholder - will be processed after page load
-            session['pending_badge_check'] = True
-            
-            # Record achievements
-            update_achievements(session['user_id'], 'quiz_completed', {
-                'score': score_percentage,
-                'correct_answers': correct_count,
-                'total_questions': len(questions),
-                'time_taken': time_taken
-            })
-            
+            # Check for new badges
+            newly_awarded_badges = check_and_award_badges(session['user_id'])
+            if newly_awarded_badges:
+                flash(f"🎉 You've earned {len(newly_awarded_badges)} new badge(s)!", 'success')
+                for badge in newly_awarded_badges:
+                    flash(f"🏅 {badge['name']}: {badge['description']}", 'info')
+
         except Exception as e:
-            print(f"Error updating quiz session: {e}")
+            print(f"Error saving quiz results: {e}")
+            conn.rollback()
         finally:
-            conn.close()
+            return_db_connection(conn)
     
-    # Get quiz type from session
-    quiz_type = session.get('quiz_type', 'aws-cloud-practitioner')
-    quiz_type_display = 'AWS Cloud Practitioner' if quiz_type == 'aws-cloud-practitioner' else quiz_type.replace('-', ' ').title()
-    
-    # Clear quiz session
-    session.pop('quiz_session_id', None)
+    # Clear quiz session data
     session.pop('quiz_questions', None)
     session.pop('quiz_current', None)
     session.pop('quiz_answers', None)
     session.pop('quiz_start_time', None)
-    session.pop('quiz_type', None)
+    session.pop('quiz_session_id', None)
+    session.pop('current_quiz_type', None)
     
     return render_template('quiz/results.html', 
                          results=results, 
-                         correct_count=correct_count,
-                         total_questions=len(questions),
-                         score_percentage=round(score_percentage, 1),
-                         time_taken=time_taken,
-                         quiz_type=quiz_type,
-                         quiz_type_display=quiz_type_display)
+                         total_questions=total_questions,
+                         correct_answers=correct_answers,
+                         score_percentage=score_percentage,
+                         time_taken=time_taken)
 
-@app.route('/check_badges_async')
-def check_badges_async():
-    """Asynchronously check and award badges after quiz completion"""
-    if 'user_id' not in session or not session.get('pending_badge_check'):
-        return {'status': 'no_check_needed', 'badges': []}
-    
-    # Clear pending flag
-    session.pop('pending_badge_check', None)
-    
-    try:
-        # Check and award badges
-        newly_awarded_badges = check_and_award_badges(session['user_id'])
-        
-        # Store newly awarded badges in session for display
-        if newly_awarded_badges:
-            session['newly_awarded_badges'] = newly_awarded_badges
-        
-        return {
-            'status': 'success', 
-            'badges': newly_awarded_badges,
-            'count': len(newly_awarded_badges)
-        }
-    except Exception as e:
-        print(f"Error in async badge check: {e}")
-        return {'status': 'error', 'badges': []}
-
-@app.route('/history')
+@app.route('/quiz/history')
 def quiz_history():
     """Show quiz history"""
     if 'user_id' not in session:
@@ -2786,14 +2718,41 @@ def ratelimit_handler(e):
     """Handle rate limit exceeded errors"""
     return render_template('errors/429.html'), 429
 
+# --- Health & Readiness Probes (for Load Balancers / Orchestrators) ---
+@app.route('/healthz')
+def healthz():
+    """Liveness probe: returns 200 if process is up."""
+    return jsonify(status="ok", service="quiz-app"), 200
+
+def _db_ping():
+    """Attempt a fast DB ping; return (ok: bool, message: str)."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return False, "connection_failed"
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.fetchone()
+        return True, "ok"
+    except Exception as e:
+        return False, str(e)[:120]
+    finally:
+        if conn:
+            return_db_connection(conn)
+
+@app.route('/readyz')
+def readyz():
+    """Readiness probe: checks DB connectivity."""
+    ok, msg = _db_ping()
+    code = 200 if ok else 503
+    return jsonify(status="ok" if ok else "degraded", db=msg), code
+
 # Initialize application
 def create_app(config_name='development'):
     """Application factory pattern"""
     from config import config
     app.config.from_object(config[config_name])
-    
-    # Initialize database pool
-    init_db_pool()
     
     return app
 
@@ -2807,7 +2766,6 @@ if __name__ == '__main__':
         try:
             print("🔄 Initializing database...")
             init_database()
-            init_db_pool() 
             print("✅ Database initialized successfully")
         except Exception as e:
             print(f"⚠️ Database initialization warning: {e}")
@@ -2825,7 +2783,4 @@ if __name__ == '__main__':
         app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
     finally:
         # Clean up on shutdown
-        try:
-            close_db_pool()
-        except:
-            pass
+        pass

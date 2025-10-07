@@ -73,13 +73,6 @@
             </div>
         </form>
 
-        <!-- OAuth Status Notice -->
-        <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 14px; color: #059669;">
-            <strong>✅ OAuth Status:</strong> OAuth buttons are fully functional! 
-            They initiate the OAuth flow correctly (check server logs). The redirect happens but fails due to placeholder OAuth credentials. 
-            <strong>Click to test - you'll see the redirect in action!</strong>
-        </div>
-
         <!-- OAuth Buttons -->
         <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 20px;">
             <a href="{{ url_for('oauth_login', provider='google') }}" 

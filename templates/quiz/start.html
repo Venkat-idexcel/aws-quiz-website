@@ -53,8 +53,8 @@
         </div>
 
         <!-- AWS Data Engineer Quiz -->
-        <div class="quiz-card premium coming-soon">
-            <div class="quiz-badge coming-soon-badge">Coming Soon</div>
+        <div class="quiz-card premium available">
+            <div class="quiz-badge">New</div>
             <div class="quiz-icon">
                 <div class="icon-container">📊</div>
             </div>
@@ -78,9 +78,9 @@
             </div>
 
             <div class="quiz-actions">
-                <button onclick="showComingSoonNotification('aws-data-engineer')" class="quiz-action-btn disabled">
-                    <span class="btn-text">Coming Soon</span>
-                    <span class="btn-icon">⏳</span>
+                <button onclick="showQuizConfig('aws-data-engineer')" class="quiz-action-btn primary">
+                    <span class="btn-text">Configure & Start</span>
+                    <span class="btn-icon">⚙️</span>
                 </button>
             </div>
         </div>
@@ -190,7 +190,6 @@
                 </button>
                 <button type="submit" class="btn-primary">
                     <span class="btn-text">Start Quiz</span>
-                    <span class="btn-icon">🚀</span>
                 </button>
             </div>
         </form>
@@ -645,7 +644,7 @@ function showComingSoonNotification(quizType) {
     notification.innerHTML = `
         <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2500;">
             <div style="background: white; padding: 2.5rem; border-radius: 20px; text-align: center; max-width: 400px; margin: 1rem; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🚀</div>
+                <div style="font-size: 3rem; margin-bottom: 1rem;"></div>
                 <h3 style="margin-bottom: 1rem; color: #3b82f6;">Coming Soon!</h3>
                 <p style="margin-bottom: 0.5rem; color: #4b5563;">${titles[quizType]} quiz is currently in development.</p>
                 <p style="margin-bottom: 2rem; color: #6b7280;">We're working hard to bring you the best learning experience!</p>
