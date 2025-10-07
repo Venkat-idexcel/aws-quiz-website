@@ -42,10 +42,22 @@ install_packages() {
     if [ "$OS" = "amazon" ]; then
         sudo yum update -y
         sudo yum groupinstall -y "Development Tools"
-        sudo yum install -y python3 python3-pip python3-devel postgresql-devel nginx supervisor git
+        sudo yum install -y python3 python3-pip python3-devel postgresql postgresql-server postgresql-devel nginx supervisor git
+        
+        # Initialize PostgreSQL for Amazon Linux
+        if [ ! -f /var/lib/pgsql/data/postgresql.conf ]; then
+            echo "🔧 Initializing PostgreSQL database..."
+            sudo postgresql-setup initdb
+            sudo systemctl start postgresql
+            sudo systemctl enable postgresql
+        fi
     else
         sudo apt update && sudo apt upgrade -y
-        sudo apt install -y python3 python3-pip python3-dev python3-venv libpq-dev nginx supervisor git build-essential
+        sudo apt install -y python3 python3-pip python3-dev python3-venv libpq-dev postgresql postgresql-contrib nginx supervisor git build-essential
+        
+        # Start PostgreSQL for Ubuntu
+        sudo systemctl start postgresql
+        sudo systemctl enable postgresql
     fi
 }
 
@@ -85,12 +97,12 @@ create_production_config() {
 import os
 
 class Config:
-    # Database Configuration - AWS RDS
-    DB_HOST = 'los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com'
-    DB_PORT = '3306'
+    # Database Configuration - Local PostgreSQL
+    DB_HOST = 'localhost'
+    DB_PORT = '5432'
     DB_USER = 'postgres'
-    DB_PASSWORD = 'poc2*&(SRWSjnjkn@#@#'
-    DB_NAME = 'postgres'
+    DB_PASSWORD = 'postgres'
+    DB_NAME = 'aws_quiz_db'
     
     # Flask Configuration
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-super-secret-production-key-change-this-in-production'
@@ -119,6 +131,35 @@ EOF
     echo "✅ Production configuration created"
 }
 
+# Function to setup local PostgreSQL database
+setup_local_database() {
+    echo "🗄️ Setting up local PostgreSQL database..."
+    
+    # Set password for postgres user
+    sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+    
+    # Create database
+    sudo -u postgres createdb aws_quiz_db 2>/dev/null || echo "Database aws_quiz_db already exists"
+    
+    # Configure PostgreSQL to accept local connections
+    PG_VERSION=$(sudo -u postgres psql -t -c "SELECT version();" | grep -oP '\d+\.\d+' | head -1)
+    
+    if [ "$OS" = "amazon" ]; then
+        PG_CONFIG_DIR="/var/lib/pgsql/data"
+    else
+        PG_CONFIG_DIR="/etc/postgresql/$PG_VERSION/main"
+    fi
+    
+    # Update pg_hba.conf for local connections
+    echo "🔧 Configuring PostgreSQL authentication..."
+    sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost'/" $PG_CONFIG_DIR/postgresql.conf 2>/dev/null || true
+    
+    # Restart PostgreSQL
+    sudo systemctl restart postgresql
+    
+    echo "✅ PostgreSQL setup complete"
+}
+
 # Function to test database connection
 test_database_connection() {
     echo "🔍 Testing database connection..."
@@ -127,17 +168,23 @@ test_database_connection() {
 import psycopg2
 try:
     conn = psycopg2.connect(
-        host='los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com',
-        port='3306',
+        host='localhost',
+        port='5432',
         user='postgres',
-        password='poc2*&(SRWSjnjkn@#@#',
-        database='postgres'
+        password='postgres',
+        database='aws_quiz_db'
     )
     print('✅ Database connection successful!')
+    
+    # Test basic query
+    cur = conn.cursor()
+    cur.execute('SELECT version();')
+    version = cur.fetchone()
+    print(f'PostgreSQL version: {version[0][:50]}...')
     conn.close()
 except Exception as e:
     print(f'❌ Database connection failed: {e}')
-    print('❓ Make sure your EC2 security group can access RDS on port 3306')
+    print('❓ Make sure PostgreSQL is running and configured properly')
     exit(1)
 "
 }
@@ -413,6 +460,9 @@ main() {
     
     # Install packages
     install_packages
+    
+    # Setup PostgreSQL database
+    setup_local_database
     
     # Setup application
     setup_application

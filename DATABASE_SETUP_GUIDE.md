@@ -1,52 +1,22 @@
-# AWS RDS Database Setup for EC2 Deployment
+# Local PostgreSQL Database Setup for EC2 Deployment
 
 ## 🎯 Database Connection Configuration
 
-Your application will connect to the existing AWS RDS PostgreSQL instance:
+Your application will connect to a local PostgreSQL database on the same EC2 instance:
 
 ```
-Host: los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com
-Port: 3306
+Host: localhost
+Port: 5432 (standard PostgreSQL port)
 User: postgres
-Password: poc2*&(SRWSjnjkn@#@#
-Database: postgres
+Password: postgres (configurable)
+Database: aws_quiz_db
 ```
 
 ## 🔧 Required Security Group Configuration
 
-### 1. RDS Security Group Settings
+### EC2 Security Group Settings
 
-Your RDS instance needs to allow connections from your EC2 instance:
-
-**Inbound Rules for RDS Security Group:**
-```
-Type: Custom TCP
-Port: 3306
-Source: EC2 Security Group ID (or EC2 instance's security group)
-Description: Allow EC2 to connect to RDS
-```
-
-### 2. EC2 Security Group Settings
-
-Your EC2 instance needs these outbound rules:
-
-**Outbound Rules for EC2 Security Group:**
-```
-Type: Custom TCP
-Port: 3306
-Destination: RDS Security Group ID (or 0.0.0.0/0)
-Description: Allow connection to RDS PostgreSQL
-
-Type: HTTP
-Port: 80
-Destination: 0.0.0.0/0
-Description: Allow HTTP traffic
-
-Type: HTTPS  
-Port: 443
-Destination: 0.0.0.0/0
-Description: Allow HTTPS traffic for package downloads
-```
+Since PostgreSQL runs locally on the same EC2 instance, you only need these rules:
 
 **Inbound Rules for EC2 Security Group:**
 ```
@@ -58,10 +28,20 @@ Description: Allow web traffic
 Type: SSH
 Port: 22
 Source: Your IP address
-Description: SSH access
+Description: SSH access for administration
 ```
 
-## 🔍 Testing Database Connection from EC2
+**Outbound Rules for EC2 Security Group:**
+```
+Type: All Traffic
+Port: All
+Destination: 0.0.0.0/0
+Description: Allow outbound traffic (for package downloads, etc.)
+```
+
+**Note:** No external database connections needed since PostgreSQL runs locally!
+
+## 🔍 Testing Local Database Connection
 
 ### Method 1: Using Python (Recommended)
 
@@ -71,11 +51,11 @@ python3 -c "
 import psycopg2
 try:
     conn = psycopg2.connect(
-        host='los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com',
-        port='3306',
+        host='localhost',
+        port='5432',
         user='postgres',
-        password='poc2*&(SRWSjnjkn@#@#',
-        database='postgres'
+        password='postgres',
+        database='aws_quiz_db'
     )
     print('✅ Database connection successful!')
     
@@ -103,33 +83,33 @@ except Exception as e:
 "
 ```
 
-### Method 2: Using telnet
+### Method 2: Using psql client (Local)
 
 ```bash
-# Test if port is reachable
-telnet los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com 3306
+# PostgreSQL is installed locally, so psql should be available
+sudo -u postgres psql
 
-# If successful, you should see:
-# Trying [IP address]...
-# Connected to los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com.
-# Escape character is '^]'.
-
-# Press Ctrl+C to exit
-```
-
-### Method 3: Using psql client (if installed)
-
-```bash
-# Install PostgreSQL client
-sudo yum install -y postgresql  # Amazon Linux
-# OR
-sudo apt install -y postgresql-client  # Ubuntu
-
-# Connect to database
-PGPASSWORD='poc2*&(SRWSjnjkn@#@#' psql -h los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com -p 3306 -U postgres -d postgres
+# Or connect to specific database
+sudo -u postgres psql -d aws_quiz_db
 
 # If successful, you'll get a psql prompt:
-# postgres=> 
+# postgres=# 
+```
+
+### Method 3: Check PostgreSQL Service Status
+
+```bash
+# Check if PostgreSQL is running
+sudo systemctl status postgresql
+
+# Start PostgreSQL if not running
+sudo systemctl start postgresql
+
+# Enable PostgreSQL to start on boot
+sudo systemctl enable postgresql
+
+# View PostgreSQL logs
+sudo journalctl -u postgresql -f
 ```
 
 ## 📋 Database Schema Verification

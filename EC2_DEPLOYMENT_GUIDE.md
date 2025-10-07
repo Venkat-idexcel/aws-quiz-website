@@ -89,47 +89,47 @@ pip install gunicorn
 
 ---
 
-## Step 4: Configure Database Connection
+## Step 4: Setup Local PostgreSQL Database
 
-1. **Edit config.py for production:**
+The deployment script will automatically install and configure PostgreSQL, but you can also do it manually:
+
+1. **Install PostgreSQL:**
 
 ```bash
-nano config.py
+# Amazon Linux
+sudo yum install -y postgresql postgresql-server
+sudo postgresql-setup initdb
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# Ubuntu
+sudo apt install -y postgresql postgresql-contrib
+sudo systemctl start postgresql  
+sudo systemctl enable postgresql
 ```
 
-Update the database configuration:
+2. **Configure PostgreSQL:**
 
-```python
-import os
+```bash
+# Set password for postgres user
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
 
-class Config:
-    # Database Configuration
-    DB_HOST = 'los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com'
-    DB_PORT = '3306'
-    DB_USER = 'postgres'
-    DB_PASSWORD = 'poc2*&(SRWSjnjkn@#@#'
-    DB_NAME = 'postgres'
-    
-    # Flask Configuration
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-super-secret-production-key-here'
-    
-    # Production settings
-    DEBUG = False
-    TESTING = False
+# Create application database
+sudo -u postgres createdb aws_quiz_db
 ```
 
-2. **Test database connection:**
+3. **Test database connection:**
 
 ```bash
 python3 -c "
 import psycopg2
 try:
     conn = psycopg2.connect(
-        host='los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com',
-        port='3306',
+        host='localhost',
+        port='5432', 
         user='postgres',
-        password='poc2*&(SRWSjnjkn@#@#',
-        database='postgres'
+        password='postgres',
+        database='aws_quiz_db'
     )
     print('✅ Database connection successful!')
     conn.close()
@@ -140,17 +140,20 @@ except Exception as e:
 
 ---
 
-## Step 5: Setup Database (if needed)
+## Step 5: Initialize Database
 
 ```bash
 # Activate virtual environment
 source venv/bin/activate
 
-# Run database migrations
-python3 migrate_database.py
+# Setup local database with tables and sample data
+python3 setup_local_database.py
 
-# Load AWS Data Engineer questions
+# Load AWS Data Engineer questions (additional)
 python3 load_data_engineer_simple.py
+
+# Optional: Load more Cloud Practitioner questions
+# python3 load_aws_questions.py
 ```
 
 ---
@@ -294,6 +297,8 @@ In your AWS Console:
    - Type: HTTPS, Port: 443, Source: 0.0.0.0/0 (for future SSL)
    - Type: SSH, Port: 22, Source: Your IP
 
+**Note:** No database ports needed since PostgreSQL runs locally!
+
 ---
 
 ## Step 11: Test Deployment
@@ -330,11 +335,17 @@ sudo systemctl restart nginx
 
 ### Database connection issues:
 ```bash
-# Check if EC2 can reach RDS
-telnet los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com 3306
+# Check if PostgreSQL is running locally
+sudo systemctl status postgresql
 
-# Check RDS security group allows EC2 access
-# Make sure RDS security group allows inbound from EC2 security group on port 3306
+# Start PostgreSQL if needed
+sudo systemctl start postgresql
+
+# Check if database exists
+sudo -u postgres psql -l | grep aws_quiz_db
+
+# Test connection
+sudo -u postgres psql -d aws_quiz_db -c "SELECT version();"
 ```
 
 ### Permission issues:
