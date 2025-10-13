@@ -1465,7 +1465,7 @@ def dashboard():
                     COALESCE(MAX(score_percentage), 0) as best_score,
                     COALESCE(SUM(total_questions), 0) as total_questions
                 FROM quiz_sessions 
-                WHERE user_id = %s AND completed_at IS NOT NULL
+                WHERE user_id = %s AND is_completed = TRUE
             """, (session['user_id'],))
             
             result = cur.fetchone()
@@ -2038,14 +2038,15 @@ def take_quiz():
             flash('No questions available for this quiz type.', 'error')
             return redirect(url_for('quiz'))
         
-        # Create quiz session - UPDATED for new schema
+        # Create quiz session - Set both start_time and started_at for compatibility
         quiz_category = 'AWS Cloud Practitioner' if quiz_type == 'aws-cloud-practitioner' else 'AWS Data Engineer'
+        start_time = datetime.now()
         
         cur.execute("""
-            INSERT INTO quiz_sessions (user_id, category, total_questions)
-            VALUES (%s, %s, %s)
+            INSERT INTO quiz_sessions (user_id, category, total_questions, start_time, started_at)
+            VALUES (%s, %s, %s, %s, %s)
             RETURNING id
-        """, (session['user_id'], quiz_category, len(questions)))
+        """, (session['user_id'], quiz_category, len(questions), start_time, start_time))
         
         session_id = cur.fetchone()[0]
         conn.commit()
@@ -2227,12 +2228,17 @@ def quiz_results():
         try:
             cur = conn.cursor()
             
-            # Update quiz session - UPDATED for new schema
+            # Update quiz session - Set both end_time and completed_at for compatibility
             cur.execute("""
                 UPDATE quiz_sessions 
-                SET end_time = %s, correct_answers = %s, score_percentage = %s, is_completed = TRUE
+                SET end_time = %s, 
+                    completed_at = %s,
+                    correct_answers = %s, 
+                    score_percentage = %s, 
+                    is_completed = TRUE,
+                    time_taken_minutes = %s
                 WHERE id = %s
-            """, (end_time, correct_answers, score_percentage, session['quiz_session_id']))
+            """, (end_time, end_time, correct_answers, score_percentage, time_taken, session['quiz_session_id']))
             
             # Save detailed answers - UPDATED for new schema
             answer_records = []
