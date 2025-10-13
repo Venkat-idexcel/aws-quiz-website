@@ -1040,9 +1040,10 @@ def oauth_login(provider):
         redirect_uri = url_for('oauth_callback', provider=provider, _external=True)
         print(f"📍 Redirect URI for {provider}: {redirect_uri}")
         
-        # For demo purposes, if using placeholder credentials, show success message
-        if app.config.get(f'{provider.upper()}_CLIENT_ID', '').startswith('your-'):
-             flash(f'🎉 OAuth button works! {provider.title()} OAuth initiated successfully. In production, you would be redirected to {provider.title()} for authentication.', 'success')
+        # Check if OAuth credentials are configured
+        client_id = app.config.get(f'{provider.upper()}_CLIENT_ID')
+        if not client_id or client_id.startswith('your-'):
+             flash(f'⚠️ {provider.title()} OAuth is not configured. Please use username/password login or contact administrator to set up OAuth.', 'warning')
              return redirect(url_for('login'))
         
         return client.authorize_redirect(redirect_uri)
@@ -1065,9 +1066,10 @@ def oauth_callback(provider):
             flash(f'{provider.title()} OAuth is not configured.', 'error')
             return redirect(url_for('login'))
 
-        # For demo purposes, if using placeholder credentials, show success message
-        if app.config.get(f'{provider.upper()}_CLIENT_ID', '').startswith('your-'):
-             flash(f'🎉 OAuth button works! {provider.title()} OAuth initiated successfully. In production, you would be redirected to {provider.title()} for authentication.', 'success')
+        # Check if OAuth credentials are configured
+        client_id = app.config.get(f'{provider.upper()}_CLIENT_ID')
+        if not client_id or client_id.startswith('your-'):
+             flash(f'⚠️ {provider.title()} OAuth is not configured. Please use username/password login.', 'warning')
              return redirect(url_for('login'))
 
         token = client.authorize_access_token()
