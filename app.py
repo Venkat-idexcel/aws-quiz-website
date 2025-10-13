@@ -21,13 +21,6 @@ import os
 import logging
 import time
 
-# Create config dictionary for the app
-config = {
-    'development': DevelopmentConfig,
-    'production': ProductionConfig,
-    'default': DevelopmentConfig
-}
-
 # --- Logging Configuration (stdout friendly for containers / LB) ---
 logging.basicConfig(
     level=os.getenv('LOG_LEVEL', 'INFO').upper(),
@@ -69,6 +62,7 @@ def register_request_timing(app):
 
 
 def create_app(config_name='production'):
+    from config import config
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
@@ -142,6 +136,22 @@ def create_app(config_name='production'):
     return app
 
 app = create_app(os.getenv('FLASK_ENV', 'default'))
+
+# Add comprehensive request logging
+@app.before_request
+def log_request_info():
+    """Log every incoming request for debugging"""
+    print("\n" + "="*80)
+    print(f"📥 INCOMING REQUEST")
+    print(f"   Method: {request.method}")
+    print(f"   Path: {request.path}")
+    print(f"   Full URL: {request.url}")
+    print(f"   Remote IP: {request.remote_addr}")
+    if request.form:
+        # Don't print passwords, but show that form data exists
+        form_keys = list(request.form.keys())
+        print(f"   Form Keys: {form_keys}")
+    print("="*80)
 
 # Email Configuration
 # To use Gmail: 
@@ -878,64 +888,132 @@ def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
-
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute", methods=["POST"])  # Rate limit login attempts
 def login():
     """Login page"""
+    print(f"LOGIN ROUTE CALLED - Method: {request.method}")
     if request.method == 'POST':
+        print("POST REQUEST DETECTED - Processing login...")
         email = request.form['email'].strip().lower()
         password = request.form['password']
         
+        print("\n" + "="*70)
+        print("LOGIN ATTEMPT DIAGNOSTIC")
+        print("="*70)
+        print(f"Email entered: {email}")
+        print(f"Password length: {len(password)}")
+        
         conn = get_db_connection()
         if not conn:
+            print("Database connection failed!")
             flash('Database connection error. Please try again.', 'error')
             return render_template('auth/login.html')
         
+        print("Database connected")
+        
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            
+            # Check current database
+            cur.execute("SELECT current_database()")
+            db_name = cur.fetchone()[0]
+            print(f"Connected to database: {db_name}")
+            
+            # Count total users
+            cur.execute("SELECT COUNT(*) FROM users")
+            total_users = cur.fetchone()[0]
+            print(f"Total users in database: {total_users}")
+            
+            # Try to find the user
+            print(f"Looking for user with email: {email}")
             cur.execute("SELECT * FROM users WHERE email = %s AND is_active = TRUE", (email,))
             user = cur.fetchone()
             
-            if user and check_password_hash(user['password_hash'], password):
-                # Update last login
-                cur.execute("UPDATE users SET last_login = %s WHERE id = %s", 
-                           (datetime.now(), user['id']))
-                conn.commit()
-                
-                # Set session
-                session.permanent = True  # Make session permanent
-                session['user_id'] = user['id']
-                session['username'] = user['username']
-                session['first_name'] = user['first_name']
-                session['last_name'] = user['last_name']
-                
-                # Check if is_admin column exists and set admin status
-                try:
-                    session['is_admin'] = user.get('is_admin', False) or False
-                except (KeyError, TypeError):
-                    session['is_admin'] = False
-                
-                # Log activity (only if activity logging is available)
-                try:
-                    log_user_activity(user['id'], 'LOGIN', f'User {user["username"]} logged in', 
-                                    request.remote_addr, request.headers.get('User-Agent'))
-                except Exception as log_error:
-                    print(f"Activity logging error: {log_error}")
-                
-                flash(f'Welcome back, {user["first_name"]}!', 'success')
-                
-                # Redirect to admin dashboard if admin user
-                if session.get('is_admin', False):
-                    return redirect(url_for('admin_dashboard'))
+            if user:
+                print(f"User found!")
+                print(f"   - ID: {user['id']}")
+                print(f"   - Username: {user['username']}")
+                print(f"   - Email: {user['email']}")
+                print(f"   - Active: {user['is_active']}")
+                print(f"   - Password hash exists: {user['password_hash'] is not None}")
+                if user['password_hash']:
+                    print(f"   - Password hash length: {len(user['password_hash'])}")
                 else:
-                    return redirect(url_for('dashboard'))
+                    print("   - PASSWORD HASH IS NULL!")
             else:
+                print(f"No user found with email: {email}")
+                # Show sample emails for comparison
+                cur.execute("SELECT email FROM users LIMIT 5")
+                sample_emails = cur.fetchall()
+                if sample_emails:
+                    print(f"Sample emails in database:")
+                    for row in sample_emails:
+                        print(f"   - {row[0]}")
+                else:
+                    print("   No users exist in database!")
+            
+            if user and user['password_hash']:
+                print("Checking password...")
+                password_valid = check_password_hash(user['password_hash'], password)
+                print(f"   Password valid: {password_valid}")
+                
+                if password_valid:
+                    print("Password verified successfully!")
+                    # Note: last_login column doesn't exist in current schema
+                    # If needed, add it with: ALTER TABLE users ADD COLUMN last_login TIMESTAMP;
+                    # cur.execute("UPDATE users SET last_login = %s WHERE id = %s", 
+                    #            (datetime.now(), user['id']))
+                    conn.commit()
+                    
+                    # Set session
+                    session.permanent = True  # Make session permanent
+                    session['user_id'] = user['id']
+                    session['username'] = user['username']
+                    session['first_name'] = user['first_name']
+                    session['last_name'] = user['last_name']
+                    
+                    # Check if is_admin column exists and set admin status
+                    try:
+                        session['is_admin'] = user.get('is_admin', False) or False
+                    except (KeyError, TypeError):
+                        session['is_admin'] = False
+                    
+                    # Log activity (only if activity logging is available)
+                    try:
+                        log_user_activity(user['id'], 'LOGIN', f'User {user["username"]} logged in', 
+                                        request.remote_addr, request.headers.get('User-Agent'))
+                    except Exception as log_error:
+                        print(f"Activity logging error: {log_error}")
+                    
+                    print(f"Login successful for {user['username']}!")
+                    print("="*70 + "\n")
+                    flash(f'Welcome back, {user["first_name"]}!', 'success')
+                    
+                    # Redirect to admin dashboard if admin user
+                    if session.get('is_admin', False):
+                        return redirect(url_for('admin_dashboard'))
+                    else:
+                        return redirect(url_for('dashboard'))
+                else:
+                    print("Password verification FAILED!")
+                    print("="*70 + "\n")
+                    flash('Invalid email or password.', 'error')
+            elif user and not user['password_hash']:
+                print("User has NULL password hash!")
+                print("="*70 + "\n")
+                flash('Account error. Please contact support or register again.', 'error')
+            else:
+                print("User not found or inactive")
+                print("="*70 + "\n")
                 flash('Invalid email or password.', 'error')
                 
         except Exception as e:
-            print(f"Login error: {e}")
-            flash('An error occurred during login.', 'error')
+            print(f"\nEXCEPTION in login: {e}")
+            import traceback
+            traceback.print_exc()
+            print("="*70 + "\n")
+            flash('An error occurred during login. Check console for details.', 'error')
         finally:
             return_db_connection(conn)
     
@@ -1432,9 +1510,10 @@ def take_quiz_direct(quiz_type):
     # Store quiz type in session for tracking
     session['current_quiz_type'] = quiz_type
     
+    user_id = session['user_id']
     conn = get_db_connection()
     if not conn:
-        # Use sample questions when database is not available
+        # Fallback to sample questions when database is not available
         sample_questions = [
             {
                 'id': 1,
@@ -1468,23 +1547,30 @@ def take_quiz_direct(quiz_type):
     try:
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
-        # Get questions for the quiz type
+        # Verify user exists
+        cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        if not cursor.fetchone():
+            session.clear()
+            flash("Your session has expired. Please log in again.", "warning")
+            return redirect(url_for('login'))
+
+        # Get questions for the quiz type - UPDATED for new schema
         query = ""
         if quiz_type == 'aws-cloud-practitioner':
             query = """
-                SELECT id, question, option_a, option_b, option_c, option_d, option_e, 
-                       correct_answer, explanation, is_multiselect
-                FROM aws_questions 
-                WHERE category IS NULL OR category = '' OR category NOT ILIKE 'AWS Data Engineer'
+                SELECT id, question_id, question, option_a, option_b, option_c, option_d, option_e, 
+                       correct_answer, explanation
+                FROM questions 
+                WHERE category = 'AWS Cloud Practitioner'
                 ORDER BY RANDOM() 
                 LIMIT %s
             """
         elif quiz_type == 'aws-data-engineer':
             query = """
-                SELECT id, question, option_a, option_b, option_c, option_d, option_e, 
-                       correct_answer, explanation, is_multiselect
-                FROM aws_questions 
-                WHERE category ILIKE 'AWS Data Engineer'
+                SELECT id, question_id, question, option_a, option_b, option_c, option_d, option_e, 
+                       correct_answer, explanation
+                FROM questions 
+                WHERE category = 'AWS Data Engineer'
                 ORDER BY RANDOM() 
                 LIMIT %s
             """
@@ -1544,6 +1630,7 @@ def take_quiz():
     # Store quiz type in session for tracking
     session['current_quiz_type'] = quiz_type
     
+    user_id = session['user_id']
     conn = get_db_connection()
     if not conn:
         # Fallback to sample questions when database is not available
@@ -1910,23 +1997,28 @@ def take_quiz():
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
-        # Get random questions based on quiz type
+        # Verify user exists
+        cur.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        if not cur.fetchone():
+            session.clear()
+            flash("Your session has expired. Please log in again.", "warning")
+            return redirect(url_for('login'))
+
+        # Get random questions based on quiz type - UPDATED for new schema
         query = ""
         if quiz_type == 'aws-cloud-practitioner':
             query = """
-                SELECT id, question, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation,
-                       COALESCE(is_multiselect, CASE WHEN LENGTH(TRIM(correct_answer)) > 1 THEN true ELSE false END) as is_multiselect
-                FROM aws_questions 
-                WHERE category IS NULL OR category = '' OR category NOT ILIKE 'AWS Data Engineer'
+                SELECT id, question_id, question, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation
+                FROM questions 
+                WHERE category = 'AWS Cloud Practitioner'
                 ORDER BY RANDOM() 
                 LIMIT %s
             """
         elif quiz_type == 'aws-data-engineer':
             query = """
-                SELECT id, question, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation,
-                       COALESCE(is_multiselect, CASE WHEN LENGTH(TRIM(correct_answer)) > 1 THEN true ELSE false END) as is_multiselect
-                FROM aws_questions 
-                WHERE category ILIKE 'AWS Data Engineer'
+                SELECT id, question_id, question, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation
+                FROM questions 
+                WHERE category = 'AWS Data Engineer'
                 ORDER BY RANDOM() 
                 LIMIT %s
             """
@@ -1946,18 +2038,14 @@ def take_quiz():
             flash('No questions available for this quiz type.', 'error')
             return redirect(url_for('quiz'))
         
-        # Create quiz session with quiz type information
-        quiz_data = {
-            'questions': [dict(q) for q in questions],
-            'quiz_type': quiz_type,
-            'quiz_type_display': 'AWS Cloud Practitioner' if quiz_type == 'aws-cloud-practitioner' else 'AWS Data Engineer'
-        }
+        # Create quiz session - UPDATED for new schema
+        quiz_category = 'AWS Cloud Practitioner' if quiz_type == 'aws-cloud-practitioner' else 'AWS Data Engineer'
         
         cur.execute("""
-            INSERT INTO quiz_sessions (user_id, total_questions, quiz_data)
+            INSERT INTO quiz_sessions (user_id, category, total_questions)
             VALUES (%s, %s, %s)
             RETURNING id
-        """, (session['user_id'], len(questions), json.dumps(quiz_data)))
+        """, (session['user_id'], quiz_category, len(questions)))
         
         session_id = cur.fetchone()[0]
         conn.commit()
@@ -1977,9 +2065,13 @@ def take_quiz():
                 option_d = clean_text(str(q['option_d'] or ''))
                 option_e = clean_text(str(q['option_e'] or ''))
                 
+                # Clean explanation text if it exists
+                explanation = clean_text(str(q.get('explanation') or '')) if q.get('explanation') else None
+                
                 # Store only essential data to reduce session size
                 question_data = {
                     'id': int(q['id']),
+                    'question_id': str(q['question_id']),  # Add question_id for database storage
                     'question': question_text,  # Use 'question' as the key
                     'option_a': option_a,
                     'option_b': option_b,
@@ -1987,7 +2079,8 @@ def take_quiz():
                     'option_d': option_d,
                     'option_e': option_e,
                     'correct_answer': str(q['correct_answer'] or '').strip(),
-                    'is_multi_select': bool(q.get('is_multiselect', len(str(q['correct_answer'] or '').strip()) > 1))
+                    'is_multi_select': bool(q.get('is_multiselect', len(str(q['correct_answer'] or '').strip()) > 1)),
+                    'explanation': explanation  # Include explanation for results page
                 }
                 quiz_questions.append(question_data)
                 print(f"DEBUG: Processed question {i+1}: {question_data['id']} - Multi: {question_data['is_multi_select']}")
@@ -2134,27 +2227,26 @@ def quiz_results():
         try:
             cur = conn.cursor()
             
-            # Update quiz session
+            # Update quiz session - UPDATED for new schema
             cur.execute("""
                 UPDATE quiz_sessions 
-                SET completed_at = %s, correct_answers = %s, score_percentage = %s, time_taken_minutes = %s
+                SET end_time = %s, correct_answers = %s, score_percentage = %s, is_completed = TRUE
                 WHERE id = %s
-            """, (end_time, correct_answers, score_percentage, time_taken, session['quiz_session_id']))
+            """, (end_time, correct_answers, score_percentage, session['quiz_session_id']))
             
-            # Save detailed answers
+            # Save detailed answers - UPDATED for new schema
             answer_records = []
             for res in results:
                 answer_records.append((
                     session['quiz_session_id'],
-                    res['question']['id'],
+                    res['question']['question_id'], # Use question_id from new schema
                     res['user_answer'],
-                    res['correct_answer'],
                     res['is_correct']
                 ))
             
             cur.executemany("""
-                INSERT INTO quiz_answers (session_id, question_id, user_answer, correct_answer, is_correct)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO user_answers (session_id, question_id, user_answer, is_correct)
+                VALUES (%s, %s, %s, %s)
             """, answer_records)
             
             conn.commit()
@@ -2749,34 +2841,33 @@ def readyz():
     return jsonify(status="ok" if ok else "degraded", db=msg), code
 
 # Initialize application
-def create_app(config_name='development'):
-    """Application factory pattern"""
+def main_create_app(config_name='development'):
+    """Alternative application factory pattern (legacy - use create_app instead)"""
     from config import config
-    app.config.from_object(config[config_name])
-    
+    app = create_app(config_name)
     return app
 
 if __name__ == '__main__':
-    print("🚀 Starting Quiz Application...")
-    print("📋 Redis dependency removed - using in-memory storage")
+    print("Starting Quiz Application...")
+    print("Redis dependency removed - using in-memory storage")
     
     # Initialize database in background to avoid blocking startup
     import threading
     def initialize_db():
         try:
-            print("🔄 Initializing database...")
+            print("Initializing database...")
             init_database()
-            print("✅ Database initialized successfully")
+            print("Database initialized successfully")
         except Exception as e:
-            print(f"⚠️ Database initialization warning: {e}")
-            print("ℹ️ App will use fallback connections")
+            print(f"Database initialization warning: {e}")
+            print("App will use fallback connections")
     
     # Start database initialization in background
     db_thread = threading.Thread(target=initialize_db)
     db_thread.daemon = True
     db_thread.start()
     
-    print("🌐 Starting Flask server on http://localhost:5000")
+    print("Starting Flask server on http://localhost:5000")
     
     try:
         # Run the application

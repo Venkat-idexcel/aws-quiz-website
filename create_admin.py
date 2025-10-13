@@ -14,6 +14,13 @@ import re
 # Database Configuration (AWS RDS)
 DB_CONFIG = {
     'host': 'los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com',
+    'port': 5432,
+    'database': 'postgres',  # Use standard postgres database name
+    'user': 'postgres',
+    'password': 'poc2*&(SRWSjnjkn@#@#'
+}
+DB_CONFIG = {
+    'host': 'los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com',
     'port': 3306,
     'database': 'cretificate_quiz_db',
     'user': 'postgres',

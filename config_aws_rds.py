@@ -1,4 +1,3 @@
-
 # Production Configuration for Quiz Website
 import os
 from datetime import timedelta
@@ -7,10 +6,10 @@ class Config:
     """Base configuration"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-production-secret-key-change-this')
     
-    # Database Configuration - AWS RDS PostgreSQL (Custom port configuration)
+    # Database Configuration - AWS RDS PostgreSQL
     DB_HOST = os.getenv('DB_HOST', 'los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com')
-    DB_PORT = int(os.getenv('DB_PORT', 3306))  # Custom PostgreSQL port (not standard 5432)
-    DB_NAME = os.getenv('DB_NAME', 'cretificate_quiz_db')  # Keep existing database name
+    DB_PORT = int(os.getenv('DB_PORT', 5432))  # PostgreSQL port, not MySQL
+    DB_NAME = os.getenv('DB_NAME', 'postgres')
     DB_USER = os.getenv('DB_USER', 'postgres')
     DB_PASSWORD = os.getenv('DB_PASSWORD', 'poc2*&(SRWSjnjkn@#@#')
     
@@ -39,14 +38,6 @@ class Config:
     EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'your-email@gmail.com')
     EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'your-app-password')
     EMAIL_USE_TLS = True
-    
-    # OAuth Configuration
-    GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
-    GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
-    GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
-    GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
-    MICROSOFT_CLIENT_ID = os.getenv('MICROSOFT_CLIENT_ID')
-    MICROSOFT_CLIENT_SECRET = os.getenv('MICROSOFT_CLIENT_SECRET')
 
 class DevelopmentConfig(Config):
     """Development configuration"""

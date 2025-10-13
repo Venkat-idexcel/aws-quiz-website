@@ -15,7 +15,7 @@
 
 <div class="question-card">
     <div class="question-text">
-        {{ question.question_text }}
+        {{ question.question or question.question_text }}
     </div>
 
     {% if question.is_multi_select %}

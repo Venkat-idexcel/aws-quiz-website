@@ -2,8 +2,8 @@ import psycopg2
 
 # Database credentials
 DB_HOST = 'los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com'
-DB_PORT = 3306
-DB_NAME = 'cretificate_quiz_db'
+DB_PORT = 3306  # Custom PostgreSQL port (AWS RDS configured on non-standard port)
+DB_NAME = 'cretificate_quiz_db'  # Keep existing database name
 DB_USER = 'postgres'
 DB_PASSWORD = 'poc2*&(SRWSjnjkn@#@#'
 

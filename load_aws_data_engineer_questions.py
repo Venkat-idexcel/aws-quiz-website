@@ -2,7 +2,23 @@ import os
 import re
 import psycopg2
 import hashlib
-from app import get_db_connection, return_db_connection
+
+# Database Configuration (AWS RDS)
+DB_CONFIG = {
+    'host': 'los-dev-psql-rdsclstr-new.cj6duvm27hk9.us-east-1.rds.amazonaws.com',
+    'port': 3306,
+    'database': 'cretificate_quiz_db',
+    'user': 'postgres',
+    'password': 'poc2*&(SRWSjnjkn@#@#'
+}
+
+def get_db_connection():
+    """Get database connection"""
+    return psycopg2.connect(**DB_CONFIG)
+
+def return_db_connection(conn):
+    """Close database connection"""
+    conn.close()
 
 def parse_question_blocks(text):
     """Splits the text into blocks, each containing one question."""
