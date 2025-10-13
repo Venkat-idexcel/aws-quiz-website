@@ -17,15 +17,16 @@ class Config:
     # Redis Configuration
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
     
-    # Session Configuration
-    SESSION_TYPE = 'redis'
+    # Session Configuration - Using filesystem for EC2 deployment
+    SESSION_TYPE = 'filesystem'
     SESSION_PERMANENT = False
     SESSION_USE_SIGNER = True
     SESSION_KEY_PREFIX = 'quiz_session:'
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
+    SESSION_FILE_DIR = '/tmp/flask_sessions'
     
-    # Security
-    SESSION_COOKIE_SECURE = True  # Enable in production with HTTPS
+    # Security - Disabled SECURE for HTTP deployment
+    SESSION_COOKIE_SECURE = False  # Set to True only with HTTPS
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     
@@ -56,7 +57,7 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = False  # Set to True when using HTTPS
     
     # Database Connection Pool Settings
     DB_POOL_MIN = int(os.getenv('DB_POOL_MIN', 2))
