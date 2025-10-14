@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Idexcel Quiz Platform{% endblock %}
+{% block title %}Dashboard - Idexcel Assessment Platform{% endblock %}
 
 {% block content %}
 <div class="dashboard-header">
-    <h1 class="dashboard-title">Idexcel Quiz Platform</h1>
+    <h1 class="dashboard-title">Idexcel Assessment Platform</h1>
     <p class="welcome-message">Welcome back, {{ session.first_name }} {{ session.last_name }}!</p>
 </div>
 
@@ -44,7 +44,7 @@
 <div class="card mt-4" style="text-align: center; background: var(--background-white);">
     <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">Ready to Start?</h3>
     <p style="color: var(--gray-medium); margin-bottom: 1.5rem;">
-        Welcome to the Idexcel Quiz Platform! Test your AWS Cloud Practitioner knowledge with our comprehensive question bank of 620+ questions.
+        Welcome to the Idexcel Assessment Platform! Test your AWS Cloud Practitioner knowledge with our comprehensive question bank of 620+ questions.
     </p>
     <a href="{{ url_for('quiz') }}" class="btn btn-primary">Take Your First Quiz</a>
 </div>

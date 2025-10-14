@@ -1810,16 +1810,16 @@ body::before {
 .question-card {
     background: var(--background-white);
     border-radius: 10px;
-    padding: 2rem;
-    margin-bottom: 2rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
     border: 1px solid var(--border-color);
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
 }
 
 .question-text {
-    font-size: 1.2rem;
-    margin-bottom: 1.5rem;
-    line-height: 1.7;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
     color: var(--text-dark);
 }
 
@@ -1828,19 +1828,20 @@ body::before {
 }
 
 .option-item {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .option-label {
     display: flex;
     align-items: center;
-    padding: 1rem;
+    padding: 0.75rem;
     background: var(--background-white);
     border: 2px solid var(--border-color);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     color: var(--text-dark);
+    font-size: 0.9rem;
 }
 
 .option-label:hover {

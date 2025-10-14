@@ -618,7 +618,7 @@ def send_reset_email(email, reset_token):
         msg = MIMEMultipart()
         msg['From'] = app.config['EMAIL_HOST_USER']
         msg['To'] = email
-        msg['Subject'] = 'Password Reset - Idexcel Quiz Platform'
+        msg['Subject'] = 'Password Reset - Idexcel Assessment Platform'
         
         # Create reset URL (change the domain to your actual domain)
         reset_url = f"http://127.0.0.1:5000/reset-password/{reset_token}"
@@ -627,7 +627,7 @@ def send_reset_email(email, reset_token):
         body = f"""
         Hello,
         
-        You have requested to reset your password for the Idexcel Quiz Platform.
+        You have requested to reset your password for the Idexcel Assessment Platform.
         
         Click the link below to reset your password:
         {reset_url}
@@ -637,7 +637,7 @@ def send_reset_email(email, reset_token):
         If you didn't request this password reset, please ignore this email.
         
         Best regards,
-        Idexcel Quiz Platform Team
+        Idexcel Assessment Platform Team
         """
         
         msg.attach(MIMEText(body, 'plain'))
