@@ -463,7 +463,7 @@ def log_user_activity(user_id, activity_type, description, ip_address=None, user
     try:
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO user_activities (user_id, activity_type, activity_description, ip_address, user_agent)
+            INSERT INTO user_activities (user_id, activity_type, description, ip_address, user_agent)
             VALUES (%s, %s, %s, %s, %s)
         """, (user_id, activity_type, description, ip_address, user_agent))
         conn.commit()
@@ -618,7 +618,7 @@ def send_reset_email(email, reset_token):
         msg = MIMEMultipart()
         msg['From'] = app.config['EMAIL_HOST_USER']
         msg['To'] = email
-        msg['Subject'] = 'Password Reset - Idexcel Assessment Platform'
+        msg['Subject'] = 'Password Reset - Idexcel Quiz Platform'
         
         # Create reset URL (change the domain to your actual domain)
         reset_url = f"http://127.0.0.1:5000/reset-password/{reset_token}"
@@ -627,7 +627,7 @@ def send_reset_email(email, reset_token):
         body = f"""
         Hello,
         
-        You have requested to reset your password for the Idexcel Assessment Platform.
+        You have requested to reset your password for the Idexcel Quiz Platform.
         
         Click the link below to reset your password:
         {reset_url}
@@ -637,7 +637,7 @@ def send_reset_email(email, reset_token):
         If you didn't request this password reset, please ignore this email.
         
         Best regards,
-        Idexcel Assessment Platform Team
+        Idexcel Quiz Platform Team
         """
         
         msg.attach(MIMEText(body, 'plain'))
@@ -2371,7 +2371,6 @@ def admin_dashboard():
             SELECT 
                 COUNT(*) as total_users,
                 COUNT(*) FILTER (WHERE is_active = TRUE) as active_users,
-                COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '30 days') as active_last_30_days,
                 COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') as new_users_30_days
             FROM users WHERE is_admin = FALSE
         """)
@@ -2406,7 +2405,7 @@ def admin_dashboard():
         
         # Get recent activities
         cur.execute("""
-            SELECT ua.activity_type, ua.activity_description, ua.created_at,
+            SELECT ua.activity_type, ua.description, ua.created_at,
                    u.first_name, u.last_name, u.email
             FROM user_activities ua
             JOIN users u ON ua.user_id = u.id
