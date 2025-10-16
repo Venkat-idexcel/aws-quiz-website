@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Dashboard - Idexcel Assessment Platform{% endblock %}
+{% block title %}Admin Dashboard - Idexcel Quiz Platform{% endblock %}
 
 {% block content %}
 <div class="admin-dashboard">
@@ -99,7 +99,7 @@
                                 </div>
                                 <div class="activity-info">
                                     <div class="activity-user">{{ activity.first_name }} {{ activity.last_name }}</div>
-                                    <div class="activity-description">{{ activity.activity_description }}</div>
+                                    <div class="activity-description">{{ activity.description }}</div>
                                     <div class="activity-time">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
                                 </div>
                             </div>
