@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Register - Idexcel Assessment Platform{% endblock %}
+{% block title %}Register - AWS Quiz Platform{% endblock %}
 
 {% block content %}
 <div class="auth-container" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
@@ -66,11 +66,14 @@
                 id="email" 
                 name="email" 
                 class="form-input" 
-                placeholder="Enter your email" 
+                placeholder="Enter your Idexcel email" 
                 required
                 autocomplete="email"
                 value="{{ request.form.get('email', '') }}"
             >
+            <p style="color: #ef4444; font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500;">
+                ⚠️ Please use your Idexcel email address only (@idexcel.com)
+            </p>
         </div>
 
         <div class="form-group">
@@ -172,7 +175,7 @@
 </div>
 
 <div style="text-align: center; margin-top: 2rem; color: var(--gray-medium);">
-    <small>&copy; 2025 Idexcel Assessment Platform. All Rights Reserved.</small>
+    <small>&copy; 2025 AWS Quiz Platform. All Rights Reserved.</small>
 </div>
 </div>
 {% endblock %}
