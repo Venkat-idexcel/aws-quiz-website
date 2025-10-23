@@ -4,14 +4,14 @@
 
 {% block content %}
 <div class="dashboard-header">
-    <h1 class="dashboard-title">Quiz Complete!</h1>
-    <p class="welcome-message">{{ quiz_type_display }} Results</p>
+    <h1 class="dashboard-title" style="font-size: 1.5rem;">Quiz Complete!</h1>
+    <p class="welcome-message" style="font-size: 1.1rem;">{{ quiz_type_display }} Results</p>
 </div>
 
 <div class="quiz-completion-badge">
     <div class="badge-icon">🎉</div>
-    <h3>Congratulations!</h3>
-    <p>You've completed the {{ quiz_type_display }} quiz</p>
+    <h3 style="font-size: 1.2rem;">Congratulations!</h3>
+    <p style="font-size: 1rem;">You've completed the {{ quiz_type_display }} assessment</p>
 </div>
 
 <!-- Badge Notifications -->
@@ -33,7 +33,7 @@
         {% for badge in session.get('newly_awarded_badges') %}
         <div class="col-md-6 mb-2">
             <div class="d-flex align-items-center">
-                <span class="me-2" style="font-size: 2rem; color: #333; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{{ badge.icon }}</span>
+                <span class="me-2" style="font-size: 1.2rem; color: #333; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{{ badge.icon }}</span>
                 <div>
                     <strong style="color: #333; font-weight: bold;">{{ badge.name }}</strong><br>
                     <small style="color: #666;">{{ badge.description }}</small>
@@ -108,7 +108,7 @@
 
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h3 style="color: var(--primary-blue);">Detailed Results</h3>
+    <h3 style="color: var(--primary-blue); font-size: 1.2rem;">Detailed Results</h3>
         <button id="toggleDetails" class="btn btn-secondary">Show All Questions</button>
     </div>
     
@@ -117,7 +117,7 @@
         <div class="question-result mb-4" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <strong style="color: var(--primary-blue);">Question {{ loop.index }}</strong>
-                <span class="result-badge" style="padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem; font-weight: bold;
+                <span class="result-badge" style="padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.9rem; font-weight: bold;
                     {% if result.is_correct %}background: var(--success); color: white;
                     {% else %}background: var(--danger); color: white;{% endif %}">
                     {% if result.is_correct %}✓ Correct{% else %}✗ Incorrect{% endif %}
@@ -127,7 +127,7 @@
             <div class="question-text mb-3" style="color: var(--gray-medium); line-height: 1.6;">
                 {{ result.question.question }}
                 {% if result.question.is_multiselect %}
-                <br><em style="color: var(--primary-blue); font-size: 0.9rem;">Multi-select question (select all that apply)</em>
+                <br><em style="color: var(--primary-blue); font-size: 0.95rem;">Multi-select question (select all that apply)</em>
                 {% endif %}
             </div>
             
@@ -161,7 +161,7 @@
             {% if result.question.explanation %}
             <div class="explanation-section" style="margin-top: 1.5rem; padding: 1rem; background-color: #f8f9fa; border-radius: 5px; border: 1px solid #e9ecef;">
                 <h5 style="color: var(--primary-blue); font-weight: bold; margin-bottom: 0.5rem;">Explanation</h5>
-                <p style="color: #495057; font-size: 0.95rem; line-height: 1.6;">{{ result.question.explanation }}</p>
+                <p style="color: #495057; font-size: 1rem; line-height: 1.6;">{{ result.question.explanation }}</p>
             </div>
             {% endif %}
         </div>
@@ -171,7 +171,7 @@
     <div id="summaryView">
         <div style="text-align: center; color: var(--gray-medium);">
             <p>Click "Show All Questions" to review each question and see the correct answers.</p>
-            <p style="font-size: 0.9rem;">This will help you learn from any mistakes and improve your AWS knowledge.</p>
+            <p style="font-size: 1rem;">This will help you learn from any mistakes and improve your AWS knowledge.</p>
         </div>
     </div>
 </div>
@@ -248,19 +248,19 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .badge-icon {
-    font-size: 3rem;
+    font-size: 1.5rem;
     margin-bottom: 1rem;
 }
 
 .quiz-completion-badge h3 {
     margin: 0.5rem 0;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
 }
 
 .quiz-completion-badge p {
     margin: 0;
     opacity: 0.9;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 </style>
 

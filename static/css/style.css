@@ -45,6 +45,7 @@
 
 html {
     scroll-behavior: smooth;
+    font-size: 95%; /* Professional, readable base font size */
 }
 
 body {
@@ -109,7 +110,7 @@ body::before {
 }
 
 .logo {
-    font-size: 1.8rem;
+    font-size: 1.2rem; /* Reduced for standardization */
     font-weight: 700;
     color: white;
     text-decoration: none;
@@ -167,7 +168,7 @@ body::before {
     justify-content: center;
     font-weight: 800;
     color: white;
-    font-size: 28px;
+    font-size: 1.5rem; /* Reduced for standardization */
     font-family: 'Inter', sans-serif;
     box-shadow: var(--shadow-2xl);
     position: relative;

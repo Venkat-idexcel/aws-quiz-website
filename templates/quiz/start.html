@@ -8,18 +8,16 @@
     <div class="dashboard-header">
         <div class="header-content">
             <div class="header-left">
-                <h1 class="quiz-title">📋 Choose Your Quiz</h1>
-                <p class="quiz-subtitle">Select a quiz type to test your knowledge</p>
+                <h1 class="quiz-title" style="text-align:center; width:100%;">📋 Choose Your Assessment</h1>
+                <p class="quiz-subtitle" style="text-align:center; width:100%;">Select an assessment type to test your knowledge</p>
             </div>
         </div>
         
-        <a href="{{ url_for('dashboard') }}" class="back-btn">
-            <span>Back to Dashboard</span>
-        </a>
+        {# Back to Dashboard button removed as per user request #}
     </div>
 
-    <div class="quiz-selection-grid">
-        <!-- AWS Cloud Practitioner Quiz -->
+    <div class="quiz-selection-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2rem; justify-items: stretch; align-items: stretch;">
+    <!-- AWS Cloud Practitioner Assessment -->
         <div class="quiz-card premium available">
             <div class="quiz-badge">Most Popular</div>
             <div class="quiz-icon">
@@ -46,13 +44,13 @@
 
             <div class="quiz-actions">
                 <button onclick="showQuizConfig('aws-cloud-practitioner')" class="quiz-action-btn primary">
-                    <span class="btn-text">Configure & Start</span>
+                    <span class="btn-text">Configure & Start Assessment</span>
                     <span class="btn-icon">⚙️</span>
                 </button>
             </div>
         </div>
 
-        <!-- AWS Data Engineer Quiz -->
+    <!-- AWS Data Engineer Assessment -->
         <div class="quiz-card premium available">
             <div class="quiz-badge">New</div>
             <div class="quiz-icon">
@@ -79,13 +77,13 @@
 
             <div class="quiz-actions">
                 <button onclick="showQuizConfig('aws-data-engineer')" class="quiz-action-btn primary">
-                    <span class="btn-text">Configure & Start</span>
+                    <span class="btn-text">Configure & Start Assessment</span>
                     <span class="btn-icon">⚙️</span>
                 </button>
             </div>
         </div>
 
-        <!-- Tableau Desktop Quiz -->
+    <!-- Tableau Desktop Assessment -->
         <div class="quiz-card premium coming-soon">
             <div class="quiz-badge coming-soon-badge">Coming Soon</div>
             <div class="quiz-icon">
@@ -126,11 +124,11 @@
     <div class="modal-backdrop"></div>
     <div class="modal-content">
         <div class="modal-header">
-            <h2>🎯 Configure Your Quiz</h2>
+            <h2>🎯 Configure Your Assessment</h2>
             <button class="modal-close" onclick="closeQuizConfig()">×</button>
         </div>
         
-        <form method="POST" action="{{ url_for('take_quiz') }}" class="config-form">
+    <form method="POST" action="{{ url_for('take_quiz') }}" class="config-form">
             <input type="hidden" id="selected-quiz-type" name="quiz_type" value="">
             
             <div class="config-section">
@@ -189,7 +187,7 @@
                     Cancel
                 </button>
                 <button type="submit" class="btn-primary">
-                    <span class="btn-text">Start Quiz</span>
+                    <span class="btn-text">Start Assessment</span>
                 </button>
             </div>
         </form>

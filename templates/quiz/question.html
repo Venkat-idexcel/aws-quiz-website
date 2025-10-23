@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Question {{ current }} of {{ total }} - Idexcel Quiz Platform{% endblock %}
+{% block title %}Question {{ current }} of {{ total }} - Idexcel Assessment Platform{% endblock %}
 
 {% block content %}
 <div class="quiz-progress">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <span style="color: var(--gray-medium);">Question {{ current }} of {{ total }}</span>
+    <span style="color: var(--gray-medium);">Question {{ current }} of {{ total }}</span>
         <span id="timer" style="color: var(--primary-blue); font-weight: bold;">00:00</span>
     </div>
     <div class="progress-bar">
@@ -14,7 +14,7 @@
 </div>
 
 <div class="question-card">
-    <div class="question-text">
+    <div class="question-text" style="font-size: 1.18rem;">
         {{ question.question or question.question_text }}
     </div>
 
@@ -39,7 +39,7 @@
             {% for letter in ['A', 'B', 'C', 'D', 'E'] %}
                 {% if question['option_' + letter.lower()] %}
                 <li class="option-item">
-                    <label class="option-label" for="option{{ letter }}">
+                    <label class="option-label" for="option{{ letter }}" style="font-size: 1.08rem;">
                         {% if question.is_multi_select %}
                         <input
                             type="checkbox"
@@ -67,11 +67,6 @@
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
             <div>
-                {% if current > 1 %}
-                <span style="color: var(--gray-medium);">
-                    Cannot go back to previous questions
-                </span>
-                {% else %}
                 <span style="color: var(--gray-medium);">
                     {% if question.is_multi_select %}
                         Select {{ question.correct_answer|length }} answers to continue
@@ -79,24 +74,26 @@
                         Select an answer to continue
                     {% endif %}
                 </span>
-                {% endif %}
             </div>
 
-            <button type="submit" class="btn btn-primary" id="nextButton" disabled>
-                {% if current < total %}
-                    Next Question →
-                {% else %}
-                    Finish Quiz
-                {% endif %}
-            </button>
+            <div style="display: flex; gap: 1rem;">
+                {# Previous button removed: no backend route implemented #}
+                <button type="submit" class="btn btn-primary" id="nextButton" disabled>
+                    {% if current < total %}
+                        Next
+                    {% else %}
+                        Finish Assessment
+                    {% endif %}
+                </button>
+            </div>
         </div>
     </form>
 </div>
 
 <div class="text-center mt-4">
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary"
-       onclick="return confirm('Are you sure you want to leave the quiz? Your progress will be lost.')">
-        Exit Quiz
+    onclick="return confirm('Are you sure you want to leave the assessment? Your progress will be lost.')">
+     Exit Assessment
     </a>
 </div>
 {% endblock %}

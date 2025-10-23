@@ -451,8 +451,8 @@
     {% if session.user_id %}
     <header class="header">
         <div class="container">
-            <a href="{{ url_for('dashboard') }}" class="logo">
-                <img src="{{ url_for('static', filename='img/idexcel-AssessIQ.png') }}" alt="AssessIQ Professional Platform" style="height: 72px;">
+            <a href="{{ url_for('dashboard') }}" class="logo" style="display: flex; align-items: center; height: 72px;">
+                <img src="{{ url_for('static', filename='img/idexcel-AssessIQ.png') }}" alt="AssessIQ Professional Platform" style="height: 64px; display: block; margin: auto 0; max-height: 68px;">
             </a>
             <div class="header-right">
                 <nav class="nav-links">
@@ -465,7 +465,7 @@
                         </a>
                     {% else %}
                         <a href="{{ url_for('dashboard') }}">Dashboard</a>
-                        <a href="{{ url_for('quiz') }}">Take Quiz</a>
+                        <a href="{{ url_for('quiz') }}">Take Assessment</a>
                         <a href="{{ url_for('quiz_history') }}">History</a>
                         <div class="dropdown">
                             <button class="dropdown-toggle" onclick="toggleDropdown()" aria-label="More options">
@@ -480,9 +480,9 @@
                 </nav>
                 <div class="user-info">
                     {% if session.get('is_admin', False) %}
-                        <span style="background: linear-gradient(135deg, #ffd700, #ffed4a); color: #1a202c; padding: 0.25rem 0.75rem; border-radius: 15px; font-weight: 600; font-size: 0.8rem;">ADMIN</span>
+                        <span style="background: linear-gradient(135deg, #ffd700, #ffed4a); color: #1a202c; padding: 0.25rem 0.75rem; border-radius: 15px; font-weight: 600; font-size: 0.9rem;">ADMIN</span>
                     {% endif %}
-                    <span style="font-weight: 500;">Welcome, {{ session.first_name }}!</span>
+                    <span style="font-weight: 500; font-size: 1rem;">Welcome, {{ session.first_name }}!</span>
                     <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
                 </div>
             </div>
