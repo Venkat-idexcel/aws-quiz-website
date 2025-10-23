@@ -17,7 +17,7 @@
     
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="{% block og_title %}AssessIQ - Professional Learning Platform{% endblock %}">
-    <meta property="og:description" content="Master technical skills with our interactive assessment platform">
+    <meta property="og:description" content="Master technical skills with our interactive quiz platform">
     <meta property="og:type" content="website">
     
     <style>
@@ -506,7 +506,7 @@
                                     {% endif %}
                                 </div>
                                 <div class="flash-content">{{ message|safe }}</div>
-                                <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+                                <button class="flash-close" onclick="this.parentElement.remove()" aria-label="Close"></button>
                             </div>
                         {% endfor %}
                     </div>
