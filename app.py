@@ -2446,12 +2446,16 @@ def admin_users():
         # Get all users with their performance summary
         cur.execute("""
             SELECT u.id, u.username, u.email, u.first_name, u.last_name, 
-                   u.created_at, u.last_login, u.is_active,
-                   ups.total_quizzes, ups.average_score, ups.best_score,
-                   ups.total_time_spent_minutes, ups.last_quiz_date
+                   u.created_at, u.is_active,
+                   COUNT(DISTINCT qs.id) as total_quizzes,
+                   ROUND(AVG(qs.score_percentage), 1) as average_score,
+                   MAX(qs.score_percentage) as best_score,
+                   SUM(qs.time_taken_minutes) as total_time_spent_minutes,
+                   MAX(qs.completed_at) as last_quiz_date
             FROM users u
-            LEFT JOIN user_performance_summary ups ON u.id = ups.user_id
+            LEFT JOIN quiz_sessions qs ON u.id = qs.user_id AND qs.completed_at IS NOT NULL
             WHERE u.is_admin = FALSE
+            GROUP BY u.id, u.username, u.email, u.first_name, u.last_name, u.created_at, u.is_active
             ORDER BY u.created_at DESC
         """)
         users = cur.fetchall()
@@ -2477,12 +2481,18 @@ def admin_user_detail(user_id):
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
-        # Get user details
+        # Get user details with performance statistics
         cur.execute("""
-            SELECT u.*, ups.*
+            SELECT u.*,
+                   COUNT(DISTINCT qs.id) as total_quizzes,
+                   ROUND(AVG(qs.score_percentage), 1) as average_score,
+                   MAX(qs.score_percentage) as best_score,
+                   SUM(qs.time_taken_minutes) as total_time_spent_minutes,
+                   MAX(qs.completed_at) as last_quiz_date
             FROM users u
-            LEFT JOIN user_performance_summary ups ON u.id = ups.user_id
+            LEFT JOIN quiz_sessions qs ON u.id = qs.user_id AND qs.completed_at IS NOT NULL
             WHERE u.id = %s AND u.is_admin = FALSE
+            GROUP BY u.id
         """, (user_id,))
         user = cur.fetchone()
         
@@ -2503,7 +2513,7 @@ def admin_user_detail(user_id):
         
         # Get user activities
         cur.execute("""
-            SELECT activity_type, activity_description, created_at, ip_address
+            SELECT activity_type, description, created_at, ip_address
             FROM user_activities
             WHERE user_id = %s
             ORDER BY created_at DESC
