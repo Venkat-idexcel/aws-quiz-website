@@ -988,7 +988,17 @@ def login():
                     
                     print(f"Login successful for {user['username']}!")
                     print("="*70 + "\n")
-                    flash(f'Welcome back, {user["first_name"]}!', 'success')
+                    
+                    # Check if this is a new user (no previous quiz sessions)
+                    try:
+                        cur.execute("SELECT COUNT(*) FROM quiz_sessions WHERE user_id = %s", (user['id'],))
+                        quiz_count = cur.fetchone()[0]
+                        if quiz_count == 0:
+                            flash(f'Welcome, {user["first_name"]}!', 'success')
+                        else:
+                            flash(f'Welcome back, {user["first_name"]}!', 'success')
+                    except Exception:
+                        flash(f'Welcome, {user["first_name"]}!', 'success')
                     
                     # Redirect to admin dashboard if admin user
                     if session.get('is_admin', False):
@@ -1103,7 +1113,22 @@ def oauth_callback(provider):
         session['last_name'] = user['last_name']
         session['is_admin'] = user.get('is_admin', False)
         
-        flash(f'Successfully signed in with {provider.title()}!', 'success')
+        # Check if this is a new user (no previous quiz sessions)
+        conn = get_db_connection()
+        if conn:
+            try:
+                cur = conn.cursor()
+                cur.execute("SELECT COUNT(*) FROM quiz_sessions WHERE user_id = %s", (user['id'],))
+                quiz_count = cur.fetchone()[0]
+                conn.close()
+                if quiz_count == 0:
+                    flash(f'Welcome, {user["first_name"]}! Successfully signed in with {provider.title()}.', 'success')
+                else:
+                    flash(f'Welcome back, {user["first_name"]}! Successfully signed in with {provider.title()}.', 'success')
+            except Exception:
+                flash(f'Successfully signed in with {provider.title()}!', 'success')
+        else:
+            flash(f'Successfully signed in with {provider.title()}!', 'success')
         
         # Redirect to appropriate dashboard
         if session.get('is_admin', False):

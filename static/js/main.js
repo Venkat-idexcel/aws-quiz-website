@@ -20,29 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function autoHideFlashMessages() {
     const flashMessages = document.querySelectorAll('.flash-message');
     flashMessages.forEach(function(message) {
-        // Add close button
-        const closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '×';
-        closeBtn.style.cssText = `
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        `;
-        closeBtn.addEventListener('mouseenter', () => closeBtn.style.opacity = '1');
-        closeBtn.addEventListener('mouseleave', () => closeBtn.style.opacity = '0.7');
-        closeBtn.addEventListener('click', () => hideFlashMessage(message));
-        
-        message.style.position = 'relative';
-        message.appendChild(closeBtn);
-        
-        // Auto-hide after 5 seconds
+        // Auto-hide after 5 seconds (close button already exists in HTML)
         setTimeout(() => hideFlashMessage(message), 5000);
     });
 }
