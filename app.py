@@ -20,6 +20,7 @@ from config import Config, DevelopmentConfig, ProductionConfig
 import os
 import logging
 import time
+from flask_session import Session as FlaskSession
 
 # --- Logging Configuration (stdout friendly for containers / LB) ---
 logging.basicConfig(
@@ -65,6 +66,25 @@ def create_app(config_name='production'):
     from config import config
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+    # Ensure secret key is set on the Flask app
+    app.secret_key = app.config.get('SECRET_KEY', os.urandom(24))
+
+    # Ensure session directory exists for filesystem sessions
+    if app.config.get('SESSION_TYPE') == 'filesystem':
+        session_dir = app.config.get('SESSION_FILE_DIR')
+        try:
+            if session_dir:
+                os.makedirs(session_dir, exist_ok=True)
+        except Exception as e:
+            logger.warning(f"Could not create session file dir {session_dir}: {e}")
+
+    # Initialize server-side session support (Flask-Session)
+    try:
+        FlaskSession(app)
+        logger.info("Server-side session (Flask-Session) initialized")
+    except Exception as e:
+        logger.warning(f"Flask-Session not initialized: {e}")
 
     # Initialize extensions with app
     oauth.init_app(app)
@@ -1559,17 +1579,21 @@ def take_quiz_direct(quiz_type):
         import random
         random.shuffle(sample_questions)
         questions = sample_questions[:num_questions]
-        
-        session['quiz_questions'] = [q['id'] for q in questions]
-        session['current_question'] = 0
+        # Keep same session shape as DB-backed flow (fallback)
+        session['quiz_session_id'] = 1
+        session['quiz_questions'] = questions
+        session['quiz_question_ids'] = [q['id'] for q in questions]
+        session['quiz_current'] = 0
         session['quiz_answers'] = {}
         session['quiz_start_time'] = datetime.now().isoformat()
-        
+        session['quiz_total'] = len(questions)
+        session['quiz_type'] = quiz_type
+
         return render_template('quiz/question.html', 
-                             question=questions[0], 
-                             question_num=1, 
-                             total_questions=len(questions),
-                             quiz_type=quiz_type)
+                     question=questions[0], 
+                     current=1, 
+                     total=len(questions),
+                     quiz_type=quiz_type)
     
     try:
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -1614,17 +1638,20 @@ def take_quiz_direct(quiz_type):
             return redirect(url_for('quiz'))
         
         # Store quiz session data
-        session['quiz_question_ids'] = [q['id'] for q in questions]
+        # Store full question dicts (consistent shape with DB-backed path)
         session['quiz_questions'] = [dict(q) for q in questions]
+        session['quiz_question_ids'] = [q['id'] for q in questions]
         session['quiz_current'] = 0
         session['quiz_answers'] = {}
         session['quiz_start_time'] = datetime.now().isoformat()
         session['quiz_total'] = len(questions)
-        
+        session['quiz_session_id'] = None
+
+        # Render first question - template expects `current` and `total`
         return render_template('quiz/question.html', 
                              question=questions[0], 
-                             question_num=1, 
-                             total_questions=len(questions),
+                             current=1, 
+                             total=len(questions),
                              quiz_type=quiz_type)
         
     except Exception as e:
@@ -2249,9 +2276,10 @@ def quiz_results():
     total_questions = len(questions)
     score_percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
     
-    # Save results to database
+    # Save results to database (only if we have a valid quiz_session_id)
     conn = get_db_connection()
-    if conn:
+    session_quiz_id = session.get('quiz_session_id')
+    if conn and session_quiz_id:
         try:
             cur = conn.cursor()
             
@@ -2265,14 +2293,14 @@ def quiz_results():
                     is_completed = TRUE,
                     time_taken_minutes = %s
                 WHERE id = %s
-            """, (end_time, end_time, correct_answers, score_percentage, time_taken, session['quiz_session_id']))
+            """, (end_time, end_time, correct_answers, score_percentage, time_taken, session_quiz_id))
             
             # Save detailed answers - UPDATED for new schema
             answer_records = []
             for res in results:
                 answer_records.append((
-                    session['quiz_session_id'],
-                    res['question']['question_id'], # Use question_id from new schema
+                    session_quiz_id,
+                    res['question'].get('question_id') or res['question'].get('id'), # Use question_id from new schema or fallback to id
                     res['user_answer'],
                     res['is_correct']
                 ))
@@ -2344,6 +2372,26 @@ def quiz_history():
             conn.close()
     
     return render_template('dashboard/history.html', quiz_history=quiz_history)
+
+
+# Dev-only: Dump key session values (safe, no secrets) for debugging quiz flow
+@app.route('/__debug/session')
+def debug_session():
+    # Only allow local requests for this debug route
+    if request.remote_addr not in ('127.0.0.1', '::1', 'localhost'):
+        return "Not allowed", 403
+
+    keys = ['user_id', 'username', 'quiz_questions', 'quiz_question_ids', 'quiz_current', 'quiz_total', 'quiz_answers', 'quiz_session_id', 'quiz_start_time']
+    data = {k: (len(session[k]) if k == 'quiz_questions' and k in session else session.get(k)) for k in keys}
+    # If quiz_questions exists, include first question summary
+    if 'quiz_questions' in session and isinstance(session['quiz_questions'], (list, tuple)) and len(session['quiz_questions']) > 0:
+        first = session['quiz_questions'][0]
+        data['first_question_summary'] = {
+            'id': first.get('id'),
+            'question': (first.get('question') or first.get('question_text') or '')[:120]
+        }
+
+    return jsonify(data)
 
 # Badge and Leaderboard Routes
 @app.route('/badges')

@@ -1,6 +1,7 @@
 
 # Production Configuration for Quiz Website
 import os
+import tempfile
 from datetime import timedelta
 
 class Config:
@@ -23,7 +24,8 @@ class Config:
     SESSION_USE_SIGNER = True
     SESSION_KEY_PREFIX = 'quiz_session:'
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
-    SESSION_FILE_DIR = '/tmp/flask_sessions'
+    # Cross-platform session file dir (defaults to system temp directory)
+    SESSION_FILE_DIR = os.getenv('SESSION_FILE_DIR', os.path.join(tempfile.gettempdir(), 'flask_sessions'))
     
     # Security - Disabled SECURE for HTTP deployment
     SESSION_COOKIE_SECURE = False  # Set to True only with HTTPS

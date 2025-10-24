@@ -46,15 +46,16 @@ try:
     
     time.sleep(2)  # Let it start
     
-    # Test the endpoint
-    import requests
+    # Test the endpoint using urllib from the standard library to avoid extra deps
     try:
-        response = requests.get('http://127.0.0.1:5001', timeout=3)
-        if response.status_code == 200:
-            print("✅ Test Flask app responded successfully!")
-            print("✅ Redis dependency completely removed - app works fine!")
-        else:
-            print(f"❌ App responded with status {response.status_code}")
+        from urllib.request import urlopen
+        with urlopen('http://127.0.0.1:5001', timeout=3) as resp:
+            status = resp.getcode()
+            if status == 200:
+                print("✅ Test Flask app responded successfully!")
+                print("✅ Redis dependency completely removed - app works fine!")
+            else:
+                print(f"❌ App responded with status {status}")
     except Exception as e:
         print(f"⚠️ Connection test failed: {e}")
     
