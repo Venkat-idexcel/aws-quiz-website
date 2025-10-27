@@ -11,10 +11,10 @@ backlog = 2048
 # For gevent (async) we can run fewer OS processes and rely on concurrency via greenlets.
 # Target capacity: ~200 concurrent connections. With gevent worker_connections=1000,
 # a small number of workers can handle many concurrent clients; tune per-instance CPU/RAM.
-workers = int(os.getenv('GUNICORN_WORKERS', max(2, multiprocessing.cpu_count())))
+workers = int(os.getenv('GUNICORN_WORKERS', 8))  # 8 workers for high concurrency
 worker_class = os.getenv('GUNICORN_WORKER_CLASS', 'gevent')
 # Number of concurrent clients per worker (gevent/eventlet)
-worker_connections = int(os.getenv('GUNICORN_WORKER_CONNECTIONS', 1000))
+worker_connections = int(os.getenv('GUNICORN_WORKER_CONNECTIONS', 2000))  # 2000 connections per worker
 # Restart workers periodically to avoid memory growth
 max_requests = int(os.getenv('GUNICORN_MAX_REQUESTS', 2000))
 max_requests_jitter = int(os.getenv('GUNICORN_MAX_REQUESTS_JITTER', 100))
