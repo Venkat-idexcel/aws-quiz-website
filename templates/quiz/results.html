@@ -14,42 +14,7 @@
     <p style="font-size: 1rem;">You've completed the {{ quiz_type_display }} assessment</p>
 </div>
 
-<!-- Badge Notifications -->
-<div id="badge-container">
-    <!-- Badges will be loaded here asynchronously -->
-    <div id="badge-loading" class="alert alert-info" style="display: block;">
-        <div class="d-flex align-items-center">
-            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-            <span>🏆 Checking for new badges...</span>
-        </div>
-    </div>
-</div>
 
-<!-- Static badge notifications (fallback for immediate badges) -->
-{% if session.get('newly_awarded_badges') %}
-<div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-    <h5 class="alert-heading">🏆 New Badge{{ session.get('newly_awarded_badges')|length > 1 and 's' or '' }} Earned!</h5>
-    <div class="row">
-        {% for badge in session.get('newly_awarded_badges') %}
-        <div class="col-md-6 mb-2">
-            <div class="d-flex align-items-center">
-                <span class="me-2" style="font-size: 1.2rem; color: #333; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{{ badge.icon }}</span>
-                <div>
-                    <strong style="color: #333; font-weight: bold;">{{ badge.name }}</strong><br>
-                    <small style="color: #666;">{{ badge.description }}</small>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    <div class="mt-3">
-        <a href="{{ url_for('user_badges') }}" class="btn btn-sm btn-outline-success">
-            <i class="fas fa-trophy me-1"></i>View All Badges
-        </a>
-    </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-{% endif %}
 
 <div class="dashboard-grid mb-4">
     <div class="stat-card">
@@ -264,81 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 </style>
 
-<script>
-// Asynchronously check for badges
-document.addEventListener('DOMContentLoaded', function() {
-    const badgeContainer = document.getElementById('badge-container');
-    const badgeLoading = document.getElementById('badge-loading');
-    
-    // Check if we need to load badges
-    fetch('/check_badges_async')
-        .then(response => response.json())
-        .then(data => {
-            // Hide loading indicator
-            if (badgeLoading) {
-                badgeLoading.style.display = 'none';
-            }
-            
-            if (data.status === 'success' && data.badges.length > 0) {
-                // Create badge notification HTML
-                const badgeHtml = `
-                    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-                        <h5 class="alert-heading">🏆 New Badge${data.badges.length > 1 ? 's' : ''} Earned!</h5>
-                        <div class="row">
-                            ${data.badges.map(badge => `
-                                <div class="col-md-6 mb-2">
-                                    <div class="d-flex align-items-center">
-                                        <span class="me-2" style="font-size: 2rem; color: #333; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">${badge.icon}</span>
-                                        <div>
-                                            <strong style="color: #333; font-weight: bold;">${badge.name}</strong><br>
-                                            <small style="color: #666;">${badge.description}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="mt-3">
-                            <a href="{{ url_for('user_badges') }}" class="btn btn-sm btn-outline-success">
-                                <i class="fas fa-trophy me-1"></i>View All Badges
-                            </a>
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                `;
-                
-                badgeContainer.innerHTML = badgeHtml;
-                
-                // Add celebration animation
-                setTimeout(() => {
-                    const alertElement = badgeContainer.querySelector('.alert');
-                    if (alertElement) {
-                        alertElement.style.animation = 'fadeIn 0.5s ease-in';
-                    }
-                }, 100);
-                
-                // Auto-hide after 10 seconds
-                setTimeout(() => {
-                    const alertElement = badgeContainer.querySelector('.alert');
-                    if (alertElement) {
-                        alertElement.style.transition = 'opacity 0.5s';
-                        alertElement.style.opacity = '0';
-                        setTimeout(() => alertElement.remove(), 500);
-                    }
-                }, 10000);
-                
-            } else if (data.status === 'no_check_needed' || data.badges.length === 0) {
-                // No badges to show, hide container
-                badgeContainer.style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading badges:', error);
-            // Hide loading indicator on error
-            if (badgeLoading) {
-                badgeLoading.style.display = 'none';
-            }
-        });
-});
-</script>
+
 
 {% endblock %}

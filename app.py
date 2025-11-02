@@ -253,160 +253,7 @@ def clean_text(text):
     return text
 
 # Badge System Functions
-def check_and_award_badges(user_id):
-    """Check and award badges for a user based on their achievements - OPTIMIZED"""
-    conn = get_db_connection()
-    if not conn:
-        return []
-    
-    newly_awarded = []
-    
-    try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
-        # Get user's current stats with a single optimized query
-        cur.execute("""
-            SELECT 
-                COUNT(qs.id) as quiz_count,
-                COUNT(CASE WHEN qs.score_percentage >= 90 THEN 1 END) as high_score_count,
-                COUNT(CASE WHEN qs.score_percentage = 100 THEN 1 END) as perfect_score_count,
-                COALESCE(AVG(qs.score_percentage), 0) as avg_score,
-                COALESCE(SUM(qs.correct_answers), 0) as total_correct_answers,
-                COALESCE(MIN(qs.time_taken_minutes), 999) as fastest_time
-            FROM quiz_sessions qs
-            WHERE qs.user_id = %s AND qs.completed_at IS NOT NULL
-        """, (user_id,))
-        
-        user_stats = cur.fetchone()
-        if not user_stats or user_stats['quiz_count'] == 0:
-            return newly_awarded
-        
-        # Get badges user doesn't have yet with a single query
-        cur.execute("""
-            SELECT b.* FROM badges b
-            WHERE b.is_active = TRUE 
-            AND b.id NOT IN (
-                SELECT ub.badge_id FROM user_badges ub WHERE ub.user_id = %s
-            )
-        """, (user_id,))
-        available_badges = cur.fetchall()
-        
-        # Check each badge criteria (much faster now with pre-fetched data)
-        badges_to_award = []
-        for badge in available_badges:
-            should_award = False
-            
-            # Fast criteria checking
-            if badge['criteria_type'] == 'quiz_count':
-                should_award = user_stats['quiz_count'] >= badge['criteria_value']
-            elif badge['criteria_type'] == 'high_score':
-                should_award = user_stats['high_score_count'] > 0
-            elif badge['criteria_type'] == 'perfect_score':
-                should_award = user_stats['perfect_score_count'] > 0
-            elif badge['criteria_type'] == 'average_score':
-                should_award = user_stats['avg_score'] >= badge['criteria_value'] and user_stats['quiz_count'] >= 5
-            elif badge['criteria_type'] == 'correct_answers':
-                should_award = user_stats['total_correct_answers'] >= badge['criteria_value']
-            elif badge['criteria_type'] == 'quick_completion':
-                should_award = user_stats['fastest_time'] <= badge['criteria_value']
-            
-            if should_award:
-                badges_to_award.append(badge)
-        
-        # Batch award badges if any qualify
-        if badges_to_award:
-            badge_values = [(user_id, badge['id']) for badge in badges_to_award]
-            cur.executemany("""
-                INSERT INTO user_badges (user_id, badge_id)
-                VALUES (%s, %s)
-                ON CONFLICT (user_id, badge_id) DO NOTHING
-            """, badge_values)
-            
-            # Add to newly awarded list
-            for badge in badges_to_award:
-                newly_awarded.append({
-                    'name': badge['name'],
-                    'description': badge['description'],
-                    'icon': badge['icon'],
-                    'color': badge['color']
-                })
-        
-        conn.commit()
-        return newly_awarded
-        
-    except Exception as e:
-        print(f"Error checking badges: {e}")
-        conn.rollback()
-        return newly_awarded
-    finally:
-        conn.close()
-
-def get_user_badges(user_id):
-    """Get all badges for a user"""
-    conn = get_db_connection()
-    if not conn:
-        return []
-    
-    try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("""
-            SELECT b.*, ub.awarded_at
-            FROM badges b
-            JOIN user_badges ub ON b.id = ub.badge_id
-            WHERE ub.user_id = %s
-            ORDER BY ub.awarded_at DESC
-        """, (user_id,))
-        
-        return cur.fetchall()
-        
-    except Exception as e:
-        print(f"Error getting user badges: {e}")
-        return []
-    finally:
-        conn.close()
-
-def get_leaderboard(limit=10):
-    """Get top performers for leaderboard"""
-    conn = get_db_connection()
-    if not conn:
-        return []
-    
-    try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
-        # Calculate leaderboard with comprehensive scoring
-        cur.execute("""
-            SELECT 
-                u.id,
-                u.first_name,
-                u.last_name,
-                u.username,
-                COUNT(qs.id) as total_quizzes,
-                COALESCE(AVG(qs.score_percentage), 0) as avg_score,
-                COALESCE(MAX(qs.score_percentage), 0) as best_score,
-                COUNT(ub.badge_id) as badges_count,
-                -- Comprehensive score calculation
-                (COALESCE(AVG(qs.score_percentage), 0) * 0.4 + 
-                 COUNT(qs.id) * 2 + 
-                 COUNT(ub.badge_id) * 5 + 
-                 COALESCE(MAX(qs.score_percentage), 0) * 0.1) as leaderboard_score
-            FROM users u
-            LEFT JOIN quiz_sessions qs ON u.id = qs.user_id AND qs.completed_at IS NOT NULL
-            LEFT JOIN user_badges ub ON u.id = ub.user_id
-            WHERE u.is_active = TRUE
-            GROUP BY u.id, u.first_name, u.last_name, u.username
-            HAVING COUNT(qs.id) > 0
-            ORDER BY leaderboard_score DESC
-            LIMIT %s
-        """, (limit,))
-        
-        return cur.fetchall()
-        
-    except Exception as e:
-        print(f"Error getting leaderboard: {e}")
-        return []
-    finally:
-        conn.close()
+# Badge and leaderboard functions removed per user request
 
 def update_achievements(user_id, achievement_type, achievement_data=None):
     """Record user achievements"""
@@ -2336,13 +2183,6 @@ def quiz_results():
             
             # Update performance summary in the background (or could be a task queue)
             update_user_performance_summary(session['user_id'])
-            
-            # Check for new badges
-            newly_awarded_badges = check_and_award_badges(session['user_id'])
-            if newly_awarded_badges:
-                flash(f"🎉 You've earned {len(newly_awarded_badges)} new badge(s)!", 'success')
-                for badge in newly_awarded_badges:
-                    flash(f"🏅 {badge['name']}: {badge['description']}", 'info')
 
         except Exception as e:
             print(f"Error saving quiz results: {e}")
@@ -2415,39 +2255,7 @@ def debug_session():
 
     return jsonify(data)
 
-# Badge and Leaderboard Routes
-@app.route('/badges')
-def user_badges():
-    """Display user's badges and achievements"""
-    if 'user_id' not in session:
-        flash('Please log in to view your badges.', 'error')
-        return redirect(url_for('login'))
-    
-    # Get newly awarded badges from session
-    newly_awarded = session.pop('newly_awarded_badges', [])
-    
-    user_badges = get_user_badges(session['user_id'])
-    
-    return render_template('badges.html', 
-                         user_badges=user_badges, 
-                         newly_awarded=newly_awarded)
-
-@app.route('/leaderboard')
-def leaderboard():
-    """Display leaderboard with top performers"""
-    leaderboard_data = get_leaderboard(20)
-    
-    # Get current user's position if logged in
-    user_position = None
-    if 'user_id' in session:
-        for idx, user in enumerate(leaderboard_data):
-            if user['id'] == session['user_id']:
-                user_position = idx + 1
-                break
-    
-    return render_template('leaderboard.html', 
-                         leaderboard=leaderboard_data, 
-                         user_position=user_position)
+# Badge and Leaderboard Routes - Removed per user request
 
 @app.route('/admin')
 @admin_required
