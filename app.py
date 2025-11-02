@@ -1676,10 +1676,14 @@ def take_quiz():
     print(f"DEBUG: take_quiz called with quiz_type={quiz_type}, num_questions={num_questions}")
     
     # Validate quiz type and handle unavailable options
-    if quiz_type not in ['aws-cloud-practitioner', 'aws-data-engineer']:
+    if quiz_type not in ['aws-cloud-practitioner', 'aws-data-engineer', 'isms-awareness']:
         print(f"DEBUG: Invalid quiz type: {quiz_type}")
         flash(f'Quiz type {quiz_type} is not available yet. Please check back later!', 'error')
         return redirect(url_for('quiz'))
+    
+    # For ISMS quiz, always use 20 questions (no configuration)
+    if quiz_type == 'isms-awareness':
+        num_questions = 20
     
     # Store quiz type in session for tracking
     session['current_quiz_type'] = quiz_type
@@ -2076,13 +2080,24 @@ def take_quiz():
                 ORDER BY RANDOM() 
                 LIMIT %s
             """
+        elif quiz_type == 'isms-awareness':
+            query = """
+                SELECT id, question_id, question, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation
+                FROM questions 
+                WHERE category = 'ISMS Awareness'
+                ORDER BY id ASC
+                LIMIT 20
+            """
         
         if not query:
              flash(f'Quiz type {quiz_type} is not implemented yet.', 'error')
              return redirect(url_for('quiz'))
 
         print(f"DEBUG: Executing query for {quiz_type}: {query}")
-        cur.execute(query, (num_questions,))
+        if quiz_type == 'isms-awareness':
+            cur.execute(query)
+        else:
+            cur.execute(query, (num_questions,))
         questions = cur.fetchall()
         
         print(f"DEBUG: Fetched {len(questions) if questions else 0} questions from database for {quiz_type}")
@@ -2093,7 +2108,14 @@ def take_quiz():
             return redirect(url_for('quiz'))
         
         # Create quiz session - Set both start_time and started_at for compatibility
-        quiz_category = 'AWS Cloud Practitioner' if quiz_type == 'aws-cloud-practitioner' else 'AWS Data Engineer'
+        if quiz_type == 'aws-cloud-practitioner':
+            quiz_category = 'AWS Cloud Practitioner'
+        elif quiz_type == 'aws-data-engineer':
+            quiz_category = 'AWS Data Engineer'
+        elif quiz_type == 'isms-awareness':
+            quiz_category = 'ISMS Awareness'
+        else:
+            quiz_category = 'AWS Cloud Practitioner'
         start_time = datetime.now()
         
         cur.execute("""

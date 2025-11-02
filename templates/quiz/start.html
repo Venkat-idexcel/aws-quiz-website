@@ -83,6 +83,43 @@
             </div>
         </div>
 
+    <!-- ISMS Awareness Assessment -->
+        <div class="quiz-card premium available">
+            <div class="quiz-badge">Security</div>
+            <div class="quiz-icon">
+                <div class="icon-container">🔒</div>
+            </div>
+            
+            <div class="quiz-info">
+                <h3>ISMS Awareness</h3>
+                <div class="quiz-details">
+                    <div class="detail-item">
+                        <span class="detail-icon">🔒</span>
+                        <span class="detail-text">Information Security</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">📋</span>
+                        <span class="detail-text">20 Questions (Fixed)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">⏱️</span>
+                        <span class="detail-text">15-20 Minutes</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quiz-actions">
+                <form method="POST" action="{{ url_for('take_quiz') }}" style="width: 100%;">
+                    <input type="hidden" name="quiz_type" value="isms-awareness">
+                    <input type="hidden" name="num_questions" value="20">
+                    <button type="submit" class="quiz-action-btn primary">
+                        <span class="btn-text">Start Assessment</span>
+                        <span class="btn-icon">🚀</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
     <!-- Tableau Desktop Assessment -->
         <div class="quiz-card premium coming-soon">
             <div class="quiz-badge coming-soon-badge">Coming Soon</div>
