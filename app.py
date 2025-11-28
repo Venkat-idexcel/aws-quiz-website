@@ -1397,7 +1397,7 @@ def take_quiz_direct(quiz_type):
     num_questions = 20
     
     # Validate quiz type and handle unavailable options
-    if quiz_type not in ['aws-cloud-practitioner', 'aws-data-engineer']:
+    if quiz_type not in ['aws-cloud-practitioner', 'aws-data-engineer', 'cloud-practitioner-practice']:
         flash(f'Quiz type {quiz_type} is not available yet. Please check back later!', 'error')
         return redirect(url_for('quiz'))
     
@@ -1523,7 +1523,7 @@ def take_quiz():
     print(f"DEBUG: take_quiz called with quiz_type={quiz_type}, num_questions={num_questions}")
     
     # Validate quiz type and handle unavailable options
-    if quiz_type not in ['aws-cloud-practitioner', 'aws-data-engineer', 'isms-awareness']:
+    if quiz_type not in ['aws-cloud-practitioner', 'aws-data-engineer', 'isms-awareness', 'cloud-practitioner-practice']:
         print(f"DEBUG: Invalid quiz type: {quiz_type}")
         flash(f'Quiz type {quiz_type} is not available yet. Please check back later!', 'error')
         return redirect(url_for('quiz'))
@@ -1935,6 +1935,14 @@ def take_quiz():
                 ORDER BY id ASC
                 LIMIT 20
             """
+        elif quiz_type == 'cloud-practitioner-practice':
+            query = """
+                SELECT id, question_id, question, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation
+                FROM questions 
+                WHERE category = 'Cloud Practitioner Practice Test'
+                ORDER BY RANDOM() 
+                LIMIT %s
+            """
         
         if not query:
              flash(f'Quiz type {quiz_type} is not implemented yet.', 'error')
@@ -1961,6 +1969,8 @@ def take_quiz():
             quiz_category = 'AWS Data Engineer'
         elif quiz_type == 'isms-awareness':
             quiz_category = 'ISMS Awareness'
+        elif quiz_type == 'cloud-practitioner-practice':
+            quiz_category = 'Cloud Practitioner Practice Test'
         else:
             quiz_category = 'AWS Cloud Practitioner'
         start_time = datetime.now()
@@ -1992,6 +2002,28 @@ def take_quiz():
                 # Clean explanation text if it exists
                 explanation = clean_text(str(q.get('explanation') or '')) if q.get('explanation') else None
                 
+                # Detect multi-select questions more accurately
+                answer_str = str(q['correct_answer'] or '').strip()
+                question_text_lower = question_text.lower()
+                
+                # Check if it's multi-select by counting comma-separated answers or looking for phrases
+                is_multi = (len([x.strip() for x in answer_str.split(',') if x.strip()]) > 1) or \
+                          ('choose two' in question_text_lower) or \
+                          ('select two' in question_text_lower) or \
+                          ('choose three' in question_text_lower) or \
+                          ('select three' in question_text_lower) or \
+                          ('choose 2' in question_text_lower) or \
+                          ('select 2' in question_text_lower)
+                
+                # For multi-select, count the actual number of answers needed
+                if is_multi:
+                    answer_count = len([x.strip() for x in answer_str.split(',') if x.strip()])
+                    print(f"DEBUG: Multi-select detected - Question: {question_text[:50]}...")
+                    print(f"DEBUG: Correct Answer: {answer_str}")
+                    print(f"DEBUG: Answer Count: {answer_count}")
+                else:
+                    answer_count = 1
+                
                 # Store only essential data to reduce session size
                 question_data = {
                     'id': int(q['id']),
@@ -2002,8 +2034,9 @@ def take_quiz():
                     'option_c': option_c, 
                     'option_d': option_d,
                     'option_e': option_e,
-                    'correct_answer': str(q['correct_answer'] or '').strip(),
-                    'is_multi_select': bool(q.get('is_multiselect', len(str(q['correct_answer'] or '').strip()) > 1)),
+                    'correct_answer': answer_str,
+                    'is_multi_select': is_multi,
+                    'answer_count': answer_count,  # Add this for frontend
                     'explanation': explanation  # Include explanation for results page
                 }
                 quiz_questions.append(question_data)
@@ -2088,6 +2121,9 @@ def quiz_question():
     if current < len(questions):
         question = questions[current]
         print(f"DEBUG: Retrieved question {current + 1}: {question.get('question', 'No question text')[:50]}...")
+        print(f"DEBUG: Question is_multi_select: {question.get('is_multi_select', False)}")
+        print(f"DEBUG: Question answer_count: {question.get('answer_count', 1)}")
+        print(f"DEBUG: Question correct_answer: {question.get('correct_answer', 'No answer')}")
         
         print(f"DEBUG: Displaying question {current + 1} of {total_questions}")
         

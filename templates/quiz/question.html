@@ -21,7 +21,7 @@
     {% if question.is_multi_select %}
     <div class="multi-select-notice">
         <span style="color: var(--primary-blue); font-weight: bold;">
-            ⚠️ Select {{ question.correct_answer|length }} answers for this question
+            ⚠️ Select {{ question.answer_count }} answers for this question
         </span>
     </div>
     {% else %}
@@ -69,7 +69,7 @@
             <div>
                 <span style="color: var(--gray-medium);">
                     {% if question.is_multi_select %}
-                        Select {{ question.correct_answer|length }} answers to continue
+                        Select {{ question.answer_count }} answers to continue
                     {% else %}
                         Select an answer to continue
                     {% endif %}
@@ -124,7 +124,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (isMultiSelect) {
         // Multi-select logic
         const checkboxes = document.querySelectorAll('input[name="answer"]');
-        const requiredCount = {{ question.correct_answer|length if question.is_multi_select else 1 }};
+        const requiredCount = {{ question.answer_count if question.is_multi_select else 1 }};
+        console.log('Multi-select question detected');
+        console.log('Required count:', requiredCount);
+        console.log('Question is_multi_select:', {{ question.is_multi_select|lower }});
+        console.log('Question answer_count:', {{ question.answer_count }});
 
         checkboxes.forEach(function(checkbox) {
             checkbox.addEventListener('change', function() {
