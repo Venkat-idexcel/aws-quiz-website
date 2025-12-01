@@ -6,31 +6,29 @@ import os
 bind = f"0.0.0.0:{os.getenv('PORT', 5000)}"
 backlog = 2048
 
-# Worker processes
-# Calculate workers conservatively: (2 x CPU) + 1 is a good baseline for sync workers.
-# For gevent (async) we can run fewer OS processes and rely on concurrency via greenlets.
-# Target capacity: ~200 concurrent connections. With gevent worker_connections=1000,
-# a small number of workers can handle many concurrent clients; tune per-instance CPU/RAM.
-workers = int(os.getenv('GUNICORN_WORKERS', 8))  # 8 workers for high concurrency
+# Worker processes - Optimized for high load
+# Using gevent for async handling - can support thousands of concurrent connections
+# Target capacity: 1000+ concurrent connections
+workers = int(os.getenv('GUNICORN_WORKERS', 16))  # Increased to 16 workers for very high concurrency
 worker_class = os.getenv('GUNICORN_WORKER_CLASS', 'gevent')
-# Number of concurrent clients per worker (gevent/eventlet)
-worker_connections = int(os.getenv('GUNICORN_WORKER_CONNECTIONS', 2000))  # 2000 connections per worker
+# Number of concurrent clients per worker (gevent/eventlet) - significantly increased
+worker_connections = int(os.getenv('GUNICORN_WORKER_CONNECTIONS', 5000))  # 5000 connections per worker
 # Restart workers periodically to avoid memory growth
-max_requests = int(os.getenv('GUNICORN_MAX_REQUESTS', 2000))
-max_requests_jitter = int(os.getenv('GUNICORN_MAX_REQUESTS_JITTER', 100))
+max_requests = int(os.getenv('GUNICORN_MAX_REQUESTS', 5000))  # Increased before restart
+max_requests_jitter = int(os.getenv('GUNICORN_MAX_REQUESTS_JITTER', 200))  # More jitter for load balancing
 
 # Restart workers after this many requests, to help prevent memory leaks
-max_requests = 1000
-max_requests_jitter = 50
+max_requests = 5000  # Increased for better performance
+max_requests_jitter = 200  # More jitter for load distribution
 
-# Timeout
-timeout = 30
-keepalive = 60
+# Timeout - optimized for high load
+timeout = 120  # Increased timeout for slow connections
+keepalive = 5  # Reduced keepalive to free up connections faster
 
-# Security
-limit_request_line = 4094
-limit_request_fields = 100
-limit_request_field_size = 8190
+# Security - increased limits for better performance
+limit_request_line = 8192  # Increased for larger requests
+limit_request_fields = 200  # More fields allowed
+limit_request_field_size = 16384  # Larger field sizes
 
 # Logging
 accesslog = "-"

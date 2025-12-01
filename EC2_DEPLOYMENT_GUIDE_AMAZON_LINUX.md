@@ -127,22 +127,38 @@ Press `Ctrl+C` to stop when you see it's working.
 ### Step 8: Create Systemd Service
 
 ```bash
-# Create service file
+# Create service file with high-performance settings
 sudo nano /etc/systemd/system/aws-quiz-app.service
 ```
 
-Paste this content:
+Paste this **optimized** content for handling 1000+ users:
 ```ini
 [Unit]
-Description=AWS Quiz Application
-After=network.target
+Description=AWS Quiz Application (High Performance)
+After=network.target postgresql.service
+Wants=postgresql.service
 
 [Service]
+Type=notify
 User=ec2-user
 Group=ec2-user
+RuntimeDirectory=aws-quiz-app
 WorkingDirectory=/var/www/aws-quiz-app
 Environment="PATH=/var/www/aws-quiz-app/venv/bin"
-ExecStart=/var/www/aws-quiz-app/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:5000 wsgi:app --timeout 120
+Environment="PYTHONPATH=/var/www/aws-quiz-app"
+Environment="GUNICORN_WORKERS=16"
+Environment="GUNICORN_WORKER_CONNECTIONS=5000"
+ExecStart=/var/www/aws-quiz-app/venv/bin/gunicorn --config gunicorn_config.py wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=60
+PrivateTmp=true
+Restart=always
+RestartSec=10
+
+# Performance settings for high load
+LimitNOFILE=65536
+LimitNPROC=32768
 
 [Install]
 WantedBy=multi-user.target
@@ -157,28 +173,107 @@ Save and exit (`Ctrl+X`, `Y`, `Enter`).
 sudo nano /etc/nginx/conf.d/aws-quiz-app.conf
 ```
 
-Paste this content:
+Paste this **high-performance** content optimized for 1000+ users:
 ```nginx
 server {
     listen 80;
     server_name _;
-    client_max_body_size 10M;
-
+    
+    # Performance optimizations
+    client_max_body_size 50M;
+    client_body_buffer_size 128k;
+    client_header_buffer_size 4k;
+    large_client_header_buffers 4 16k;
+    
+    # Connection settings for high load
+    keepalive_timeout 65;
+    keepalive_requests 1000;
+    
+    # Enable gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/json
+        application/javascript
+        application/xml+rss
+        application/atom+xml
+        image/svg+xml;
+    
+    # Rate limiting to prevent abuse
+    limit_req_zone $binary_remote_addr zone=login:10m rate=10r/m;
+    limit_req_zone $binary_remote_addr zone=quiz:10m rate=30r/m;
+    limit_req_zone $binary_remote_addr zone=general:10m rate=100r/m;
+    
+    # Main application proxy with rate limiting
     location / {
+        limit_req zone=general burst=20 nodelay;
+        
         proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_connect_timeout 60s;
-        proxy_read_timeout 60s;
+        proxy_cache_bypass $http_upgrade;
+        
+        # Increased timeouts for high load
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+        
+        # Buffer settings for better performance
+        proxy_buffering on;
+        proxy_buffer_size 16k;
+        proxy_buffers 8 16k;
+        proxy_busy_buffers_size 32k;
+    }
+    
+    # Login rate limiting (stricter)
+    location /login {
+        limit_req zone=login burst=5 nodelay;
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
     }
 
+    # Static files with aggressive caching
     location /static {
         alias /var/www/aws-quiz-app/static;
-        expires 30d;
+        expires 1y;
         add_header Cache-Control "public, immutable";
+        add_header X-Cache-Status "STATIC";
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        gzip_static on;
+        add_header X-Content-Type-Options nosniff;
     }
+    
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+    
+    # Security headers
+    add_header X-Frame-Options DENY;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options nosniff;
+    add_header Referrer-Policy strict-origin-when-cross-origin;
+    server_tokens off;
 }
 ```
 
