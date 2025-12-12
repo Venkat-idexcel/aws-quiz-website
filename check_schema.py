@@ -11,37 +11,35 @@ conn = psycopg2.connect(
 
 cur = conn.cursor()
 
-# Get users table schema
+# Get questions table schema
 cur.execute("""
-    SELECT column_name, data_type, is_nullable 
+    SELECT column_name, data_type, character_maximum_length, is_nullable 
     FROM information_schema.columns 
-    WHERE table_name='users' 
+    WHERE table_name='questions' 
     ORDER BY ordinal_position
 """)
 
-print("\n📋 Users Table Schema:")
-print("="*60)
-for col_name, data_type, nullable in cur.fetchall():
-    print(f"  {col_name:20} {data_type:15} {'NULL' if nullable == 'YES' else 'NOT NULL'}")
+print("\n📋 Questions Table Schema:")
+print("="*80)
+for col_name, data_type, max_len, nullable in cur.fetchall():
+    max_len_str = str(max_len) if max_len else "unlimited"
+    print(f"  {col_name:20} {data_type:15}({max_len_str:10}) {'NULL' if nullable == 'YES' else 'NOT NULL'}")
 
-# Check if last_login exists
+# Check current question count
+cur.execute("SELECT COUNT(*) FROM questions WHERE category = 'Cloud Practitioner Practice Test'")
+count = cur.fetchone()[0]
+print(f"\n📊 Current Cloud Practitioner Practice Test questions: {count}")
+
+# Check latest question ID
 cur.execute("""
-    SELECT COUNT(*) 
-    FROM information_schema.columns 
-    WHERE table_name='users' AND column_name='last_login'
+    SELECT question_id FROM questions 
+    WHERE category = 'Cloud Practitioner Practice Test' 
+    AND question_id LIKE 'CP_%' 
+    ORDER BY question_id DESC 
+    LIMIT 1
 """)
-has_last_login = cur.fetchone()[0] > 0
-
-print(f"\n✅ last_login column exists: {has_last_login}")
-
-# Get sample user data
-cur.execute("SELECT id, username, email, password_hash FROM users LIMIT 5")
-print("\n👤 Sample Users:")
-print("="*60)
-for user_id, username, email, pwd_hash in cur.fetchall():
-    print(f"\nID: {user_id}")
-    print(f"  Username: {username}")
-    print(f"  Email: {email}")
-    print(f"  Password hash: {pwd_hash[:50] if pwd_hash else 'NULL'}...")
+result = cur.fetchone()
+latest_id = result[0] if result else "None"
+print(f"📝 Latest question ID: {latest_id}")
 
 conn.close()

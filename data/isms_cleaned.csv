@@ -1,0 +1,21 @@
+question,option_a,option_b,option_c,option_d,option_e,correct_answer,explanation,category
+What is information security?,"Protection of business vision, mission and values",Protection of policy and procedures,"Protection of confidentiality, integrity and availability",Protection of intellectual property,,C,,ISMS Awareness
+Who is responsible for information security?,Only the IT team,Only management,Every employee,Only auditors,,C,,ISMS Awareness
+"Information security focuses only on technology, not people or processes.?",True,False,,,,B,,ISMS Awareness
+PCI - DSS stands for?,Payment Card Industry Data Security S tandard,Pay Card Industry Data Security Standard,Payment Card Information Data Security Standard,Pay Card Information Data Security Standard,,A,,ISMS Awareness
+Which of the following is not a Trust Services Criterion (TSC) in SOC 2?,Security,Availability,Confidentiality,Profitability,,D,,ISMS Awareness
+While creating new documented information?,It is essential that the document carries company logo as the watermark,"A copy of the new information must be created so that in case the information is destroyed by mistake, th e same can be recovered easily",,,,C,,ISMS Awareness
+Which of the following is a direct effect of a security breach?,Increased system performance,Data loss or theft,Reduced electricity consumption,Improved employee morale,,B,,ISMS Awareness
+"You receive an email from an unknown sender claiming to be from IT support, asking you to click a link to reset your password. What should you do?",,,,,,C,,ISMS Awareness
+You’re working from a café using public Wi -Fi. What is the best way to protect organizational data?,,,,,,B,,ISMS Awareness
+"A person without a badge enters your office area, claiming to be from maintenance. What should you do?",,,,,,C,,ISMS Awareness
+You mistakenly send an internal confidential document to an external recipient. What should you do first?,,,,,,B,,ISMS Awareness
+You find a free tool online that would help in your work. Should you install it?,,,,,,B,,ISMS Awareness
+"If an employee is caught doing an offense like abusing the internet, he/she will instantly receive an I ncident report instead of a mere warning.?",True,False,,,,A,,ISMS Awareness
+What is social engineering?,A group planning for social activity in the organization,Creating a situation wherein a third party gains confidential information from you,The organization is planning an activity for the welfare of the neighborhood,None,,B,,ISMS Awareness
+"Before leaving for the day, what should you ensure?",,,,,,B,,ISMS Awareness
+Your company laptop contai ning project data is stolen from your car. What should you do?,,,,,,C,,ISMS Awareness
+How often should you change your password as per ISMS best practices?,,,,,,B,,ISMS Awareness
+A colleague says they’ve never read the ISMS policy. What should you do?,,,,,,B,,ISMS Awareness
+An employee leaves the company. What should be ensured as part of ISMS?,,,,,,B,,ISMS Awareness
+A friend visits your office and wants to see your workspace. What should you do?,,,,,,B,,ISMS Awareness

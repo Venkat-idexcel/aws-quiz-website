@@ -1230,9 +1230,24 @@ def register():
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
-    """Forgot password page"""
+    """Direct password reset page - no email required"""
     if request.method == 'POST':
-        email = request.form['email'].strip().lower()
+        email = request.form.get('email', '').strip().lower()
+        new_password = request.form.get('new_password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+        
+        # Validate inputs
+        if not email:
+            flash('Email is required.', 'error')
+            return render_template('auth/forgot_password.html')
+        
+        if not new_password or len(new_password) < 6:
+            flash('Password must be at least 6 characters long.', 'error')
+            return render_template('auth/forgot_password.html')
+        
+        if new_password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template('auth/forgot_password.html')
         
         conn = get_db_connection()
         if not conn:
@@ -1241,37 +1256,24 @@ def forgot_password():
         
         try:
             cur = conn.cursor()
-            cur.execute("SELECT id FROM users WHERE email = %s AND is_active = TRUE", (email,))
+            cur.execute("SELECT id, username FROM users WHERE email = %s AND is_active = TRUE", (email,))
             user = cur.fetchone()
             
             if user:
-                # Generate reset token
-                reset_token = secrets.token_urlsafe(32)
-                expires = datetime.now() + timedelta(hours=1)
-                
+                # Update password directly
+                password_hash = generate_password_hash(new_password)
                 cur.execute("""
                     UPDATE users 
-                    SET reset_token = %s, reset_token_expires = %s 
-                    WHERE email = %s
-                """, (reset_token, expires, email))
+                    SET password_hash = %s 
+                    WHERE id = %s
+                """, (password_hash, user[0]))
                 conn.commit()
                 
-                # Send password reset email
-                email_sent = False
-                try:
-                    email_sent = send_reset_email(email, reset_token)
-                except:
-                    email_sent = False
-                
-                if email_sent:
-                    flash(f'Password reset instructions have been sent to {email}. Please check your email.', 'info')
-                else:
-                    # Development mode: show token and clickable link
-                    reset_url = f"http://127.0.0.1:5000/reset-password/{reset_token}"
-                    flash(f'Email service unavailable. Use this link to reset password: <a href="{reset_url}" target="_blank">Reset Password</a>', 'warning')
+                flash('Password has been reset successfully! Please log in with your new password.', 'success')
+                return redirect(url_for('login'))
             else:
-                # Don't reveal if email exists or not
-                flash(f'If an account with {email} exists, password reset instructions have been sent.', 'info')
+                # Don't reveal if email exists or not (security best practice)
+                flash('If an account with this email exists, the password has been reset.', 'info')
                 
         except Exception as e:
             print(f"Forgot password error: {e}")
