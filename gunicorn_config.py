@@ -7,23 +7,21 @@ bind = f"0.0.0.0:{os.getenv('PORT', 5000)}"
 backlog = 2048
 
 # Worker processes - Optimized for high load
-# Using gevent for async handling - can support thousands of concurrent connections
-# Target capacity: 1000+ concurrent connections
-workers = int(os.getenv('GUNICORN_WORKERS', 16))  # Increased to 16 workers for very high concurrency
+# Formula: (2 x CPU cores) + 1 for CPU-bound tasks
+# For gevent: can use more workers since they're async
+cpu_count = multiprocessing.cpu_count()
+workers = int(os.getenv('GUNICORN_WORKERS', (cpu_count * 2) + 1))  # Auto-scale based on CPU
 worker_class = os.getenv('GUNICORN_WORKER_CLASS', 'gevent')
-# Number of concurrent clients per worker (gevent/eventlet) - significantly increased
-worker_connections = int(os.getenv('GUNICORN_WORKER_CONNECTIONS', 5000))  # 5000 connections per worker
+# Gevent worker connections - reduced to reasonable amount per worker
+worker_connections = int(os.getenv('GUNICORN_WORKER_CONNECTIONS', 1000))  # 1000 connections per worker
 # Restart workers periodically to avoid memory growth
-max_requests = int(os.getenv('GUNICORN_MAX_REQUESTS', 5000))  # Increased before restart
-max_requests_jitter = int(os.getenv('GUNICORN_MAX_REQUESTS_JITTER', 200))  # More jitter for load balancing
+max_requests = int(os.getenv('GUNICORN_MAX_REQUESTS', 10000))  # Increased lifecycle
+max_requests_jitter = int(os.getenv('GUNICORN_MAX_REQUESTS_JITTER', 500))  # Jitter for load balancing
 
-# Restart workers after this many requests, to help prevent memory leaks
-max_requests = 5000  # Increased for better performance
-max_requests_jitter = 200  # More jitter for load distribution
-
-# Timeout - optimized for high load
-timeout = 120  # Increased timeout for slow connections
-keepalive = 5  # Reduced keepalive to free up connections faster
+# Timeout - optimized for production
+timeout = int(os.getenv('GUNICORN_TIMEOUT', 60))  # Reasonable timeout
+graceful_timeout = int(os.getenv('GUNICORN_GRACEFUL_TIMEOUT', 30))  # Graceful shutdown timeout
+keepalive = int(os.getenv('GUNICORN_KEEPALIVE', 2))  # Keep connections alive briefly
 
 # Security - increased limits for better performance
 limit_request_line = 8192  # Increased for larger requests

@@ -36,6 +36,9 @@ limiter = Limiter(
     default_limits=["1000 per hour", "100 per minute"]
 )
 
+# Global database connection pool - initialized in create_app
+db_pool = None
+
 # Simple request timing middleware
 from flask import Response
 
@@ -85,6 +88,25 @@ def create_app(config_name='production'):
         logger.info("Server-side session (Flask-Session) initialized")
     except Exception as e:
         logger.warning(f"Flask-Session not initialized: {e}")
+
+    # Initialize database connection pool
+    global db_pool
+    try:
+        db_pool = psycopg2.pool.ThreadedConnectionPool(
+            minconn=int(os.getenv('DB_POOL_MIN', 5)),
+            maxconn=int(os.getenv('DB_POOL_MAX', 50)),
+            host=app.config['DB_HOST'],
+            port=app.config['DB_PORT'],
+            database=app.config['DB_NAME'],
+            user=app.config['DB_USER'],
+            password=app.config['DB_PASSWORD'],
+            connect_timeout=10,
+            options='-c statement_timeout=30000'  # 30 second query timeout
+        )
+        logger.info(f"Database connection pool initialized (min=5, max=50)")
+    except Exception as e:
+        logger.error(f"Failed to create database connection pool: {e}")
+        db_pool = None
 
     # Initialize extensions with app
     oauth.init_app(app)
@@ -201,28 +223,39 @@ def get_db_connection():
         return g.db_conn
 
     try:
-        # Use app context to get config
+        # Get connection from pool if available
+        if db_pool:
+            conn = db_pool.getconn()
+            if conn:
+                g.db_conn = conn
+                g.db_conn_from_pool = True
+                return conn
+        
+        # Fallback to direct connection if pool not available
+        logger.warning("Connection pool not available, using direct connection")
         conn = psycopg2.connect(
             host=app.config['DB_HOST'],
             port=app.config['DB_PORT'],
             database=app.config['DB_NAME'],
             user=app.config['DB_USER'],
             password=app.config['DB_PASSWORD'],
-            connect_timeout=5
+            connect_timeout=10
         )
         g.db_conn = conn
+        g.db_conn_from_pool = False
         return conn
     except Exception as e:
         logger.error(f"Database connection error: {e}")
-        # Optionally, flash a message or handle it
-        # flash('Database connection is currently unavailable. Please try again later.', 'error')
         return None
 
 def return_db_connection(conn):
     """Return connection to pool or close if not using pool"""
-    # This function is simplified as we are not using a pool in this version.
     if conn and not conn.closed:
-        conn.close()
+        # Check if connection came from pool
+        if db_pool and getattr(g, 'db_conn_from_pool', False):
+            db_pool.putconn(conn)
+        else:
+            conn.close()
 
 # Application teardown
 @app.teardown_appcontext
